@@ -70,6 +70,8 @@
   .stage { display: flex; flex-direction: column; align-items: center; gap: 8px; }
   .pitch { position: relative; width: min(100%, max(380px, calc((100dvh - 150px) * 5 / 7))); aspect-ratio: 5 / 7; container-type: inline-size; border-radius: 16px; overflow: hidden; background: var(--pitch-a); box-shadow: 0 0 0 1px var(--line), 0 18px 50px rgba(0,0,0,.45); }
   .pitch > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .fpool { width: 100%; display: grid; gap: 6px; margin-top: 6px; }
+  .fpool .poolh { margin: 0; }
   .movehint { margin: 0; font-size: 12px; color: var(--mute); }
 
   /* Vaga: disco com a foto + etiqueta com o nome da vaga e do jogador */
@@ -134,7 +136,7 @@
     .tile { width: 70px; }
   }
 
-  /* Painel da direita: Steam e fotos */
+  /* Painel da direita: fotos e imagens */
   .search { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
   @media (min-width: 1080px) { .search { position: sticky; top: 12px; max-height: calc(100dvh - 24px); } }
   .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
@@ -166,9 +168,19 @@
   .hint { font-size: 12px; color: var(--mute); margin: 0; }
 
   /* Telas: início, modelos e editor */
-  body[data-view="home"] .top, body[data-view="home"] .app,
-  body[data-view="templates"] .top, body[data-view="templates"] .app { display: none; }
-  body[data-view="edit"] .home, body[data-view="home"] #templates, body[data-view="templates"] #home { display: none; }
+  body:not([data-view="edit"]) .top, body:not([data-view="edit"]) .app { display: none; }
+  body[data-view="edit"] .home, body:not([data-view="home"]) #home, body:not([data-view="templates"]) #templates, body:not([data-view="community"]) #community { display: none; }
+  .pcard .by { color: var(--mute); }
+  .pcard .smp { font-size: 12px; color: var(--mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pcard .pbtns .warn { color: #ff9b8a; }
+  #pubDlg { width: min(420px, calc(100vw - 32px)); background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+  #pubDlg::backdrop { background: rgba(5,8,15,.7); }
+  #pubForm { display: grid; gap: 12px; }
+  #pubForm h2 { margin: 0; font-family: var(--font-d); font-size: 28px; text-transform: uppercase; letter-spacing: .03em; }
+  #pubForm p { margin: 0; font-size: 13px; color: var(--mute); line-height: 1.4; }
+  #pubForm label { display: grid; gap: 4px; font-size: 13px; color: var(--mute); }
+  #pubForm input { min-height: 40px; padding: 6px 10px; background: var(--ink); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font-size: 15px; }
+  #pubForm input:focus { outline: none; border-color: var(--gold); }
   .home { max-width: 1100px; margin: 0 auto; padding: 8px 0 40px; display: grid; gap: 28px; }
   .hhead { display: flex; gap: 14px; align-items: center; }
   .hhead .mark { height: 64px; }
@@ -258,7 +270,7 @@
     <span class="mark" aria-hidden="true"></span>
     <div>
       <h1>Escalação</h1>
-      <p>Monte escalações e tierlists com jogos da Steam, suas fotos e imagens da web. Crie uma conta para guardar suas listas e acessá-las de qualquer aparelho.</p>
+      <p>Monte escalações de futebol e tierlists com suas fotos, imagens da web ou só texto. Crie uma conta para guardar suas listas e acessá-las de qualquer aparelho.</p>
     </div>
     <div class="acct" id="acct"></div>
   </div>
@@ -266,10 +278,6 @@
   <div>
     <h2>Criar</h2>
     <div class="mcards">
-      <button class="mcard" type="button" data-new="jogos">
-        <div class="art"><svg viewBox="0 0 160 110" aria-hidden="true"><rect x="30" y="4" width="100" height="102" rx="8" fill="#2f7f55"/><g fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.5"><rect x="38" y="10" width="84" height="90"/><line x1="38" y1="55" x2="122" y2="55"/><circle cx="80" cy="55" r="12"/></g><g stroke="#fff" stroke-width="1.5"><circle cx="80" cy="22" r="7" fill="#7a3b2e"/><circle cx="58" cy="42" r="7" fill="#2e5a7a"/><circle cx="102" cy="42" r="7" fill="#5a2e7a"/><circle cx="62" cy="74" r="7" fill="#7a6a2e"/><circle cx="98" cy="74" r="7" fill="#2e7a5a"/><circle cx="80" cy="92" r="7" fill="#7a2e55"/></g></svg></div>
-        <div class="body"><h3>Escalação de jogos</h3><p>Monte seu time ideal de jogos da Steam, com categorias como melhor enredo, melhor trilha e melhor combate.</p><span class="go">Começar →</span></div>
-      </button>
       <button class="mcard" type="button" data-new="futebol">
         <div class="art"><svg viewBox="0 0 160 110" aria-hidden="true"><rect x="30" y="4" width="100" height="102" rx="8" fill="#2a7450"/><g fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.5"><rect x="38" y="10" width="84" height="90"/><line x1="38" y1="55" x2="122" y2="55"/><circle cx="80" cy="55" r="12"/></g><g fill="#e8edf7" stroke="#f4b942" stroke-width="1.5"><circle cx="56" cy="24" r="6"/><circle cx="80" cy="20" r="6"/><circle cx="104" cy="24" r="6"/><circle cx="60" cy="48" r="6"/><circle cx="80" cy="52" r="6"/><circle cx="100" cy="48" r="6"/><circle cx="48" cy="74" r="6"/><circle cx="68" cy="78" r="6"/><circle cx="92" cy="78" r="6"/><circle cx="112" cy="74" r="6"/><circle cx="80" cy="94" r="6"/></g></svg></div>
         <div class="body"><h3>Escalação de futebol</h3><p>Escale seu time com as fotos dos jogadores. Escolha a formação, mova cada um pelo campo e defina técnico e reservas.</p><span class="go">Começar →</span></div>
@@ -277,6 +285,10 @@
       <button class="mcard" type="button" data-go="templates">
         <div class="art"><svg viewBox="0 0 160 110" aria-hidden="true"><g><rect x="14" y="8" width="26" height="22" fill="#ff7f7f"/><rect x="40" y="8" width="106" height="22" fill="#1b2438"/><rect x="14" y="32" width="26" height="22" fill="#ffbf7f"/><rect x="40" y="32" width="106" height="22" fill="#1b2438"/><rect x="14" y="56" width="26" height="22" fill="#ffdf7f"/><rect x="40" y="56" width="106" height="22" fill="#1b2438"/><rect x="14" y="80" width="26" height="22" fill="#bfff7f"/><rect x="40" y="80" width="106" height="22" fill="#1b2438"/></g><g fill="#5a2e7a"><rect x="46" y="11" width="16" height="16"/><rect x="66" y="11" width="16" height="16"/></g><g fill="#2e5a7a"><rect x="46" y="35" width="16" height="16"/></g><g fill="#7a6a2e"><rect x="46" y="59" width="16" height="16"/><rect x="66" y="59" width="16" height="16"/><rect x="86" y="59" width="16" height="16"/></g><g fill="#2e7a5a"><rect x="46" y="83" width="16" height="16"/></g></svg></div>
         <div class="body"><h3>Tierlist</h3><p>Classifique filmes, comida, jogos ou o que quiser em tiers. Comece por um modelo pronto ou do zero.</p><span class="go">Escolher modelo →</span></div>
+      </button>
+      <button class="mcard" type="button" data-go="community">
+        <div class="art"><svg viewBox="0 0 160 110" aria-hidden="true"><g fill="none" stroke="#f4b942" stroke-width="2"><circle cx="80" cy="36" r="12" fill="#2e5a7a"/><path d="M58 84c0-14 10-24 22-24s22 10 22 24"/><circle cx="38" cy="46" r="9" fill="#5a2e7a"/><path d="M22 86c0-11 7-19 16-19 5 0 8 2 11 5"/><circle cx="122" cy="46" r="9" fill="#2e7a5a"/><path d="M138 86c0-11-7-19-16-19-5 0-8 2-11 5"/></g></svg></div>
+        <div class="body"><h3>Comunidade</h3><p>Veja tierlists publicadas por outras pessoas, use como modelo e publique as suas.</p><span class="go">Ver tierlists →</span></div>
       </button>
     </div>
   </div>
@@ -314,6 +326,7 @@
     </div>
     <div class="grp hide" id="ctlTier">
       <button class="btn" id="btnAddTier" type="button">Adicionar tier</button>
+      <button class="btn" id="btnPublish" type="button" title="Mostrar esta tierlist na aba Comunidade">Publicar na comunidade</button>
       <label class="chk" for="showNames"><input type="checkbox" id="showNames"> Mostrar nomes</label>
     </div>
     <button class="btn" id="btnClear" type="button">Limpar</button>
@@ -322,6 +335,29 @@
     <span id="saveState" role="status" aria-live="polite"></span>
   </div>
 </header>
+
+<!-- Comunidade -->
+<section class="home" id="community" aria-label="Comunidade">
+  <button class="btn back" type="button" data-go="home">← Início</button>
+  <div class="hhead">
+    <span class="mark" aria-hidden="true"></span>
+    <div>
+      <h1>Comunidade</h1>
+      <p>Tierlists publicadas por quem usa o site. Use qualquer uma como modelo e faça a sua versão. Para publicar a sua, entre na conta e clique em “Publicar na comunidade” dentro da tierlist.</p>
+    </div>
+  </div>
+  <div class="saved" id="comList"></div>
+</section>
+
+<dialog id="pubDlg" aria-labelledby="pubTitle">
+  <form id="pubForm" novalidate>
+    <h2 id="pubTitle">Publicar na comunidade</h2>
+    <p>A tierlist, com as fotos, fica visível para todo mundo que abrir a Comunidade. Seu e-mail não aparece. Publicar de novo a mesma lista atualiza a publicação.</p>
+    <label>Nome que vai aparecer<input id="pubName" maxlength="24" autocomplete="nickname" placeholder="Ex.: Lucas"></label>
+    <p class="aerr" id="pubErr" role="alert"></p>
+    <div class="abtn"><button class="btn" type="button" id="pubCancel">Cancelar</button><button class="btn primary" type="submit" id="pubOk">Publicar</button></div>
+  </form>
+</dialog>
 
 <dialog id="authDlg" aria-labelledby="authTitle">
   <form id="authForm" novalidate>
@@ -335,7 +371,7 @@
   </form>
 </dialog>
 
-<main class="app" id="app" data-mode="jogos">
+<main class="app" id="app" data-mode="futebol">
   <aside class="bench" aria-label="Técnico e reservas">
     <section><h2>Técnico</h2><div class="list" id="coach"></div></section>
     <section><h2>Reservas</h2><div class="list" id="reserves"></div></section>
@@ -344,6 +380,10 @@
   <section class="stage">
     <div class="pitch" id="pitch"><div id="pitchSlots"></div></div>
     <p class="movehint">Arraste a foto ou o ícone para mover o jogador pelo campo.</p>
+    <div class="fpool">
+      <h2 class="poolh">Sem posição</h2>
+      <div class="tarea pool" id="fpool" data-area="pool" data-empty="Elementos adicionados sem vaga marcada ficam aqui. Arraste até uma vaga, ou clique no elemento para colocá-lo."></div>
+    </div>
   </section>
 
   <section class="tierwrap" aria-label="Tierlist">
@@ -357,9 +397,8 @@
     <div class="tarea pool" id="poolArea" data-area="pool" data-empty="Os itens adicionados sem tier marcado ficam aqui."></div>
   </section>
 
-  <aside class="search" id="searchPanel" aria-label="Jogos e fotos">
+  <aside class="search" id="searchPanel" aria-label="Fotos e imagens">
     <div class="tabs" role="tablist">
-      <button type="button" role="tab" id="tabSteam" data-tab="steam">Steam</button>
       <button type="button" role="tab" id="tabFotos" data-tab="fotos">Fotos</button>
       <button type="button" role="tab" id="tabImgs" data-tab="imgs">Imagens</button>
     </div>
@@ -367,17 +406,8 @@
     <form class="textadd slottext" id="slotText" autocomplete="off">
       <input id="slotName" maxlength="40" placeholder="Elemento só de texto (ex.: Neymar)" aria-label="Texto do elemento para a vaga">
       <label class="colorpick" title="Cor de fundo">Cor <input id="slotColor" type="color" value="#6a3fa0" aria-label="Cor de fundo do elemento"></label>
-      <button class="btn" type="submit">Colocar na vaga</button>
+      <button class="btn" type="submit">Adicionar elemento</button>
     </form>
-
-    <div class="pane" id="paneSteam">
-      <div class="field">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input id="q" type="search" placeholder="Buscar jogo na Steam" autocomplete="off" aria-label="Nome do jogo">
-      </div>
-      <div class="status" id="status" role="status" aria-live="polite"></div>
-      <ul class="results" id="results"></ul>
-    </div>
 
     <div class="pane hide" id="paneFotos">
       <div class="upl">
@@ -406,7 +436,6 @@
 "use strict";
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const imgUrl = (id, kind) => `/img?id=${encodeURIComponent(id)}&kind=${kind}`;
 const initials = (n) => (n || "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -434,7 +463,7 @@ const TEMPLATES = {
 };
 const KEYS = [...Array.from({ length: 11 }, (_, i) => "f" + i), "c", ...Array.from({ length: 7 }, (_, i) => "b" + i)];
 const isField = (k) => k[0] === "f";
-const MODES = ["jogos", "futebol", "tier"];
+const MODES = ["futebol", "tier"];
 const TIER_COLORS = ["#ff7f7f", "#ffbf7f", "#ffdf7f", "#ffff7f", "#bfff7f", "#7fff7f", "#7fffff", "#7fbfff", "#bf7fff", "#ff7fff"];
 
 const PITCH_LINES = [
@@ -463,11 +492,11 @@ const inkFor = (hex) => {
 /* ---------- Estado ---------- */
 let tidN = 0;
 const newTid = () => "t" + Date.now().toString(36) + tidN++;
-const defPitch = (formation, template, title) => ({ title, formation, template, slots: {}, labels: {}, pos: {} });
+const defPitch = (formation, template, title) => ({ title, formation, template, slots: {}, labels: {}, pos: {}, pool: [] });
 const defTier = (title) => ({ title: title || "Minha tierlist", names: false, pool: [], tiers: ["S", "A", "B", "C", "D"].map((n, i) => ({ id: newTid(), name: n, color: TIER_COLORS[i], items: [] })) });
 const uidn = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-const MODE_NAME = { jogos: "Escalação de jogos", futebol: "Escalação de futebol", tier: "Tierlist" };
-const newData = (mode) => mode === "tier" ? defTier() : mode === "futebol" ? defPitch("f433", "posicoes", "Minha escalação de futebol") : defPitch("cat", "categorias", "Minha seleção de jogos");
+const MODE_NAME = { futebol: "Escalação de futebol", tier: "Tierlist" };
+const newData = (mode) => mode === "tier" ? defTier() : defPitch("f433", "posicoes", "Minha escalação de futebol");
 // Completa listas salvas por versões antigas e descarta dados inválidos.
 function normData(mode, d) {
   const base = newData(mode);
@@ -475,27 +504,41 @@ function normData(mode, d) {
   if (mode === "tier") return Array.isArray(d.tiers) && Array.isArray(d.pool) ? Object.assign(base, d) : base;
   return FORMATIONS[d.formation] && TEMPLATES[d.template] ? Object.assign(base, d) : base;
 }
-const hasContent = (mode, d) => (mode === "tier" ? d.pool.length > 0 || d.tiers.some((t) => t.items.length) : Object.keys(d.slots).length > 0);
+// Listas do antigo modo "escalação de jogos" viram escalações de futebol; itens da Steam viram itens de texto.
+function fixProj(p) {
+  if (!p || typeof p !== "object") return null;
+  const old = p.mode === "jogos";
+  const mode = old ? "futebol" : p.mode;
+  if (!MODES.includes(mode)) return null;
+  const d = normData(mode, p.data);
+  if (old || mode === "futebol") {
+    const asText = (g) => (g && !g.u && !g.x ? { id: "x" + uidn(), name: g.name || "Item", x: 1 } : g);
+    for (const k of Object.keys(d.slots)) d.slots[k] = asText(d.slots[k]);
+    d.pool = (d.pool || []).map(asText);
+  }
+  return { id: p.id || "p" + uidn(), mode, updated: p.updated || Date.now(), data: d };
+}
+const hasContent = (mode, d) => (mode === "tier" ? d.pool.length > 0 || d.tiers.some((t) => t.items.length) : Object.keys(d.slots).length > 0 || d.pool.length > 0);
 
 const KEY = "escalacao-v3", V2 = "escalacao-v2", V1 = "escalacao-games-v1", LIBKEY = "escalacao-lib-v1";
 // view: home | templates | edit.  cur = lista aberta no editor (só entra em projects ao ser salva).
-let S = { view: "home", tab: "steam", mode: "jogos", projects: [], cur: null };
+let S = { view: "home", tab: "fotos", mode: "futebol", projects: [], cur: null };
 let LIB = {};   // fotos enviadas: id -> { id, name, src }
 try {
   const v3 = JSON.parse(localStorage.getItem(KEY) || "null");
   if (v3 && Array.isArray(v3.projects)) {
-    S.projects = v3.projects.filter((p) => p && MODES.includes(p.mode)).map((p) => ({ id: p.id || "p" + uidn(), mode: p.mode, updated: p.updated || Date.now(), data: normData(p.mode, p.data) }));
+    S.projects = v3.projects.map(fixProj).filter(Boolean);
   } else {   // traz as listas das versões anteriores
     const v2 = JSON.parse(localStorage.getItem(V2) || "null");
     if (v2 && v2.modes) {
-      for (const k of MODES) {
-        const d = v2.modes[k] && normData(k, v2.modes[k]);
-        if (d && hasContent(k, d)) S.projects.push({ id: "p" + uidn(), mode: k, updated: Date.now(), data: d });
+      for (const k of ["jogos", "futebol", "tier"]) {
+        const p = v2.modes[k] && fixProj({ mode: k, data: v2.modes[k] });
+        if (p && hasContent(p.mode, p.data)) S.projects.push(p);
       }
     } else {
       const v1 = JSON.parse(localStorage.getItem(V1) || "null");
-      const d = v1 && normData("jogos", v1);
-      if (d && hasContent("jogos", d)) S.projects.push({ id: "p" + uidn(), mode: "jogos", updated: Date.now(), data: d });
+      const p = v1 && fixProj({ mode: "jogos", data: v1 });
+      if (p && hasContent(p.mode, p.data)) S.projects.push(p);
     }
   }
   LIB = JSON.parse(localStorage.getItem(LIBKEY) || "{}") || {};
@@ -519,14 +562,12 @@ const allProjects = () => (S.cur && !S.projects.includes(S.cur) ? [...S.projects
 let sel = null;        // vaga marcada (modos de campo)
 let tierSel = null;    // tier marcado (tierlist)
 let LABELS = {}, DEFAULTS = {}, LAY = {};
-let results = new Map();   // jogos da lista de busca atual
 
-// Tipos de item: jogo da Steam {id,name}, foto {u:1}, texto {x:1, ico?}
+// Tipos de item: foto {u:1} ou texto {x:1, c?: cor}
 const clean = (g) => (g.u ? { id: g.id, name: g.name, u: 1 } : g.x ? (g.ico || g.c ? Object.assign({ id: g.id, name: g.name, x: 1 }, g.ico ? { ico: g.ico } : {}, g.c ? { c: g.c } : {}) : { id: g.id, name: g.name, x: 1 }) : { id: g.id, name: g.name });
 function srcOf(g, kind) {
   if (g.x) return "";
-  if (g.u) return LIB[g.id] ? LIB[g.id].src : "";
-  return imgUrl(g.id, kind || "portrait");
+  return g.u && LIB[g.id] ? LIB[g.id].src : "";
 }
 const HEX = /^#[0-9a-f]{6}$/i;
 const txtBg = (g) => (g.c && HEX.test(g.c) ? g.c : `hsl(${hueOf(g.name)}, 38%, 30%)`);
@@ -537,11 +578,11 @@ const coverHTML = (g) => {
   const s = srcOf(g);
   return s ? `<img class="cover" src="${esc(s)}" data-name="${esc(g.name)}" alt="" draggable="false">` : `<span class="ini">${esc(initials(g.name))}</span>`;
 };
-const itemOf = (id) => (LIB[id] ? { id, name: LIB[id].name, u: 1 } : results.get(id));
+const itemOf = (id) => (LIB[id] ? { id, name: LIB[id].name, u: 1 } : null);
 function eachItem(fn) {
   for (const p of allProjects()) {
     if (p.mode === "tier") { p.data.pool.forEach(fn); p.data.tiers.forEach((t) => t.items.forEach(fn)); }
-    else Object.values(p.data.slots).forEach(fn);
+    else { Object.values(p.data.slots).forEach(fn); p.data.pool.forEach(fn); }
   }
 }
 const usedCount = (id) => { let n = 0; eachItem((g) => { if (g.id === id) n++; }); return n; };
@@ -592,6 +633,7 @@ function renderPitch() {
   }).join("");
   $("#coach").innerHTML = slotHTML("c", true);
   $("#reserves").innerHTML = KEYS.filter((k) => k[0] === "b").map((k) => slotHTML(k, true)).join("");
+  $("#fpool").innerHTML = M().pool.map((g, j) => tileHTML(g, "pool", j)).join("");
 }
 
 /* ---------- Desenho: tierlist ---------- */
@@ -627,24 +669,20 @@ function renderChrome() {
   $("#ctlTier").classList.toggle("hide", !isTier());
   if (isTier()) $("#showNames").checked = !!M().names;
   else { $("#formation").value = M().formation; $("#template").value = M().template; }
-  const tab = S.mode === "futebol" && S.tab === "steam" ? "fotos" : S.tab;
-  $("#tabSteam").classList.toggle("hide", S.mode === "futebol");
-  for (const [t, name] of [["steam", "Steam"], ["fotos", "Fotos"], ["imgs", "Imgs"]]) {
+  const tab = S.tab === "imgs" ? "imgs" : "fotos";
+  for (const [t, name] of [["fotos", "Fotos"], ["imgs", "Imgs"]]) {
     $("#tab" + name).setAttribute("aria-selected", t === tab);
     $("#pane" + name).classList.toggle("hide", t !== tab);
   }
-  $("#hint").textContent = S.mode === "jogos"
-    ? "Clique em um jogo ou arraste até uma vaga. Arraste a capa no campo para mover o jogador. Clique no nome de uma vaga para renomear."
-    : S.mode === "futebol"
-      ? "Adicione as fotos dos jogadores, depois clique na foto ou arraste até a vaga. Arraste o jogador no campo para posicioná-lo."
-      : "Clique em um item para colocá-lo no tier marcado (ou em “Sem tier”), ou arraste até um tier. Arraste um item para cá para remover.";
+  $("#hint").textContent = S.mode === "futebol"
+    ? "Adicione fotos, imagens ou texto: sem vaga marcada, o item fica em “Sem posição” e você o arrasta até a vaga. Arraste o jogador no campo para posicioná-lo."
+    : "Clique em um item para colocá-lo no tier marcado (ou em “Sem tier”), ou arraste até um tier. Arraste um item para cá para remover.";
 }
 
 function renderAll() {
   renderChrome();
   if (isTier()) renderTier(); else renderPitch();
   updateTarget();
-  markResults();
   renderLib();
 }
 
@@ -658,16 +696,18 @@ function updateTarget() {
   } else {
     t.innerHTML = sel
       ? `Escolhendo para: <b>${esc(LABELS[sel])}</b> <button type="button" id="clearSel">limpar</button>`
-      : "Nenhuma vaga marcada: o item entra na próxima vaga livre.";
+      : "Nenhuma vaga marcada: o item vai para “Sem posição”, abaixo do campo.";
   }
 }
 
 /* ---------- Colocar e tirar itens ---------- */
 function setStatus(msg, err, pane) {
-  const s = $({ steam: "#status", fotos: "#status2", imgs: "#status3" }[pane || S.tab] || "#status");
+  const s = $({ fotos: "#status2", imgs: "#status3" }[pane || S.tab] || "#status2");
   s.textContent = msg || ""; s.classList.toggle("err", !!err);
 }
 function place(key, game) {
+  const prev = M().slots[key];
+  if (prev && prev.id !== game.id) M().pool.push(prev);   // quem estava na vaga não se perde: vai para “Sem posição”
   setSlot(key, clean(game));
   save();
   sel = nextEmpty(key);
@@ -680,21 +720,19 @@ function addItem(game) {
     (tr ? tr.items : T.pool).push(g);
     save(); renderAll(); return;
   }
-  const target = sel || emptyKeys()[0];
-  if (!target) { setStatus("Todas as vagas estão ocupadas. Marque uma vaga para trocar o item."); return; }
-  place(target, g);
+  if (sel) place(sel, g);
+  else { M().pool.push(g); save(); renderAll(); }   // sem vaga marcada: fica em “Sem posição”
 }
 function removeAt(key) { setSlot(key, null); save(); renderAll(); }
 function selectSlot(key) {
   sel = sel === key ? null : key;
   renderAll();
   if (sel) {
-    const box = { steam: "#q", imgs: "#qi" }[S.tab];
-    if (box && !(S.mode === "futebol" && S.tab === "steam")) $(box).focus({ preventScroll: true });
+    if (S.tab === "imgs") $("#qi").focus({ preventScroll: true });
     if (window.innerWidth < 1080) $("#searchPanel").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
-function setTab(t) { S.tab = t; renderAll(); if (t === "steam") ensureSteam(); }
+function setTab(t) { S.tab = t; renderAll(); }
 
 /* ---------- Telas: início, modelos e editor ---------- */
 const TPLS = [
@@ -724,7 +762,8 @@ function renderView() {
   window.scrollTo(0, 0);
   if (S.view === "home") renderHome();
   else if (S.view === "templates") renderTemplates();
-  else { renderAll(); ensureSteam(); }
+  else if (S.view === "community") renderCommunity();
+  else renderAll();
 }
 function goView(v) {
   if (v === "edit" && !S.cur) v = "home";
@@ -737,18 +776,16 @@ window.addEventListener("popstate", (e) => {
 });
 function openCur(p) {
   S.cur = p; S.mode = p.mode; sel = null; tierSel = null;
-  if (S.mode === "futebol" && S.tab === "steam") S.tab = "fotos";
-  if (S.mode === "jogos") S.tab = "steam";
   goView("edit");
 }
-function startNew(mode, tpl) {
-  const data = mode === "tier" && tpl ? tierFromTpl(tpl) : newData(mode);
+function startNew(mode, tpl, ready) {
+  const data = ready || (mode === "tier" && tpl ? tierFromTpl(tpl) : newData(mode));
   openCur({ id: "p" + uidn(), mode, updated: Date.now(), data });
 }
 function projInfo(p) {
   const d = p.data;
   if (p.mode === "tier") { const n = d.pool.length + d.tiers.reduce((s, t) => s + t.items.length, 0); return `${n} ${n === 1 ? "item" : "itens"} em ${d.tiers.length} tiers`; }
-  return `${Object.keys(d.slots).length} de 19 vagas preenchidas`;
+  return `${Object.keys(d.slots).length} de 19 vagas preenchidas${d.pool.length ? ` · ${d.pool.length} sem posição` : ""}`;
 }
 function renderHome() {
   const list = [...S.projects].sort((a, b) => b.updated - a.updated);
@@ -772,29 +809,10 @@ function renderTemplates() {
       <div class="body"><h3>${esc(t.name)}</h3><span class="meta">${t.items.length} itens · ${t.tiers.length} tiers</span><span class="sample">Tiers: ${esc(t.tiers.join(" › "))}</span><span class="sample">${esc(t.items.slice(0, 4).map((i) => (typeof i === "string" ? i : i.n)).join(", "))}…</span></div></button>`).join("");
 }
 
-/* ---------- Steam ---------- */
-let ctl = null, timer = null, featured = null;
-function fmtPrice(p) {
-  if (!p || !p.final) return "";
-  try { return new Intl.NumberFormat("pt-BR", { style: "currency", currency: p.currency || "BRL" }).format(p.final / 100); } catch (_) { return ""; }
-}
-function renderResults(items, heading) {
-  results = new Map(items.map((g) => [String(g.id), g]));
-  setStatus(items.length ? heading : "Nenhum jogo encontrado. Tente outro nome.", false, "steam");
-  $("#results").innerHTML = items.map((g) => `<li class="res" draggable="true" tabindex="0" role="button" data-id="${g.id}" aria-label="Adicionar ${esc(g.name)}">
-      <img src="${imgUrl(g.id, "header")}" loading="lazy" alt="" draggable="false">
-      <div class="meta"><b>${esc(g.name)}</b><span class="price">${esc(fmtPrice(g.price))}</span></div>
-      <span class="in" hidden>na lista</span></li>`).join("");
-  markResults();
-}
-function markResults() {
-  const used = new Set();
-  eachItem((g) => used.add(String(g.id)));
-  document.querySelectorAll("#results .res").forEach((li) => { li.querySelector(".in").hidden = !used.has(li.dataset.id); });
-}
+/* ---------- Busca (imagens da web) ---------- */
 function failMessage(e) {
   return e instanceof TypeError
-    ? "Não consegui falar com o servidor. Abra o site por http://localhost:3000 depois de rodar: node server.js"
+    ? "Não consegui falar com o servidor. Confira a conexão e tente de novo."
     : e.message;
 }
 async function api(path, signal) {
@@ -802,26 +820,6 @@ async function api(path, signal) {
   if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || "Erro " + r.status); }
   return (await r.json()).items;
 }
-async function runSearch(term) {
-  if (ctl) ctl.abort();
-  ctl = new AbortController();
-  setStatus("Buscando…", false, "steam");
-  try { const items = await api("/api/search?term=" + encodeURIComponent(term), ctl.signal); renderResults(items, `${items.length} resultado${items.length === 1 ? "" : "s"}`); }
-  catch (e) { if (e.name !== "AbortError") setStatus(failMessage(e), true, "steam"); }
-}
-async function showFeatured() {
-  try {
-    if (!featured) { setStatus("Carregando…", false, "steam"); featured = await api("/api/featured"); }
-    renderResults(featured, "Mais vendidos agora na Steam");
-  } catch (e) { setStatus(failMessage(e), true, "steam"); }
-}
-function ensureSteam() { if (S.mode !== "futebol" && S.tab === "steam" && !results.size) showFeatured(); }
-$("#q").addEventListener("input", (e) => {
-  clearTimeout(timer);
-  const v = e.target.value.trim();
-  if (v.length < 2) { if (ctl) ctl.abort(); showFeatured(); return; }
-  timer = setTimeout(() => runSearch(v), 300);
-});
 
 /* ---------- Fotos próprias ---------- */
 function readImage(file) {
@@ -871,7 +869,7 @@ function purge(id) {   // tira a foto de todas as listas (salvas ou não) e da b
     if (p.mode === "tier") {
       p.data.pool = p.data.pool.filter((g) => g.id !== id);
       p.data.tiers.forEach((t) => { t.items = t.items.filter((g) => g.id !== id); });
-    } else for (const k of Object.keys(p.data.slots)) if (p.data.slots[k].id === id) delete p.data.slots[k];
+    } else { p.data.pool = p.data.pool.filter((g) => g.id !== id); for (const k of Object.keys(p.data.slots)) if (p.data.slots[k].id === id) delete p.data.slots[k]; }
   }
   delete LIB[id]; tomb("lib:" + id); saveLib(); persist();
 }
@@ -955,6 +953,13 @@ document.addEventListener("click", (e) => {
 
   const rm = t.closest("[data-rm]");
   if (rm) { removeAt(rm.dataset.rm); return; }
+  const ptile = !isTier() && !t.closest("[data-trm]") && t.closest("#fpool .tile");
+  if (ptile) {   // clicar num elemento de “Sem posição” coloca na vaga marcada ou na primeira livre
+    const key = sel || emptyKeys()[0], it = M().pool[+ptile.dataset.idx];
+    if (!key) { setStatus("Todas as vagas estão ocupadas. Arraste o elemento até uma vaga para trocar."); return; }
+    if (it) { M().pool.splice(+ptile.dataset.idx, 1); place(key, it); }
+    return;
+  }
   const trm = t.closest("[data-trm]");
   if (trm) {
     const tile = trm.closest(".tile"), L = listOf(tile.dataset.area);
@@ -1106,6 +1111,11 @@ function endDrag(e, cancel) {
     setSlot(over.dataset.key, a); setSlot(d.key, b);
     save(); renderAll(); return;
   }
+  if (under && under.closest("#fpool")) {   // solto em “Sem posição”: o jogador sai da vaga e fica lá
+    const it = M().slots[d.key];
+    if (it) { setSlot(d.key, null); M().pool.push(it); save(); renderAll(); return; }
+    renderAll(); return;
+  }
   if (under && under.closest("#searchPanel")) {   // solto sobre o painel: tira o jogador da vaga
     if (M().slots[d.key]) { removeAt(d.key); return; }
     renderAll(); return;
@@ -1160,10 +1170,10 @@ document.addEventListener("dragover", (e) => {
   const panel = e.target.closest && e.target.closest("#searchPanel");
   const item = types.includes("application/x-game") || types.includes("application/x-web") || files;
   if (files) e.preventDefault();
-  if (slot && !isTier() && (item || types.includes("application/x-slot"))) {
+  if (slot && !isTier() && (item || types.includes("application/x-slot") || types.includes("application/x-tile"))) {
     e.preventDefault();
     if (overEl !== slot) { clearOver(); overEl = slot; slot.classList.add("over"); }
-  } else if (area && isTier() && (item || types.includes("application/x-tile"))) {
+  } else if (area && (isTier() ? item || types.includes("application/x-tile") : item || types.includes("application/x-tile") || types.includes("application/x-slot"))) {
     e.preventDefault();
     if (overEl !== area) { clearOver(); overEl = area; area.classList.add("over"); }
   } else if (panel && (types.includes("application/x-slot") || types.includes("application/x-tile"))) {
@@ -1185,23 +1195,32 @@ document.addEventListener("drop", (e) => {
     got.then((items) => {
       if (!items.length) return;
       if (key && !isTier()) place(key, items[0]);
-      else if (aid && isTier()) { listOf(aid).splice(idx, 0, ...items.map(clean)); save(); renderAll(); }
+      else if (aid && listOf(aid)) { listOf(aid).splice(idx, 0, ...items.map(clean)); save(); renderAll(); }
       else { S.tab = "fotos"; renderAll(); }
     });
     return;
   }
   if (!isTier() && slot && game) { e.preventDefault(); place(slot.dataset.key, JSON.parse(game)); }
+  else if (!isTier() && slot && tileData) {   // arrastou um elemento de “Sem posição” até a vaga
+    e.preventDefault();
+    const t = JSON.parse(tileData), it = t.a === "pool" && M().pool[t.i];
+    if (it) { M().pool.splice(t.i, 1); place(slot.dataset.key, it); }
+  }
   else if (!isTier() && slot && from && from !== slot.dataset.key) {
     e.preventDefault();
     const a = M().slots[from], b = M().slots[slot.dataset.key];
     setSlot(slot.dataset.key, a); setSlot(from, b);
     save(); renderAll();
-  } else if (isTier() && area && (game || tileData)) {
+  } else if (area && (isTier() || area.dataset.area === "pool") && (game || tileData || (!isTier() && from))) {
     e.preventDefault();
     const idx = insertIndex(area, e.clientX, e.clientY), L = listOf(area.dataset.area);
     if (!L) return;
     if (game) L.splice(idx, 0, JSON.parse(game));
-    else {
+    else if (from) {   // jogador da vaga volta para “Sem posição”
+      const it = M().slots[from];
+      if (!it) return;
+      setSlot(from, null); L.splice(idx, 0, it);
+    } else {
       const t = JSON.parse(tileData), src = listOf(t.a);
       if (!src || !src[t.i]) return;
       const [it] = src.splice(t.i, 1);
@@ -1245,10 +1264,8 @@ $("#slotText").addEventListener("submit", (e) => {
   e.preventDefault();
   const n = $("#slotName").value.trim().slice(0, 40);
   if (!n) return;
-  const target = sel || emptyKeys()[0];
-  if (!target) { setStatus("Todas as vagas estão ocupadas. Marque uma vaga para trocar o item."); return; }
   $("#slotName").value = "";
-  place(target, { id: "x" + uidn(), name: n, x: 1, c: $("#slotColor").value });
+  addItem({ id: "x" + uidn(), name: n, x: 1, c: $("#slotColor").value });
   $("#slotName").focus();
 });
 $("#btnAddTier").addEventListener("click", () => {
@@ -1263,9 +1280,9 @@ $("#btnClear").addEventListener("click", () => {
     if (!confirm("Tirar todos os itens da tierlist?")) return;
     T.pool = []; T.tiers.forEach((t) => { t.items = []; });
   } else {
-    if (!Object.keys(M().slots).length) return;
-    if (!confirm("Limpar todos os jogadores da escalação?")) return;
-    M().slots = {}; sel = null;
+    if (!Object.keys(M().slots).length && !M().pool.length) return;
+    if (!confirm("Limpar todos os jogadores e elementos da escalação?")) return;
+    M().slots = {}; M().pool = []; sel = null;
   }
   save(); renderAll();
 });
@@ -1513,10 +1530,11 @@ function mergeRemote(r) {   // junta o que veio do servidor com o que há aqui: 
   SY.deleted = del;
   const byId = new Map();
   for (const p of S.projects) byId.set(p.id, p);
-  for (const p of r.projects || []) {
-    if (!p || !MODES.includes(p.mode)) continue;
+  for (const raw of r.projects || []) {
+    const p = fixProj(raw);
+    if (!p) continue;
     const q = byId.get(p.id);
-    if (!q || p.updated > q.updated) byId.set(p.id, { id: p.id, mode: p.mode, updated: p.updated, data: normData(p.mode, p.data) });
+    if (!q || p.updated > q.updated) byId.set(p.id, p);
   }
   if (S.cur && S.projects.includes(S.cur)) byId.set(S.cur.id, S.cur);   // não troca a lista que está sendo editada
   S.projects = [...byId.values()].filter((p) => !((del[p.id] || 0) >= p.updated)).sort((a, b) => b.updated - a.updated);
@@ -1632,6 +1650,87 @@ document.addEventListener("click", async (e) => {
     if (SY.dirty && !confirm("Há alterações que ainda não foram enviadas para a conta. Sair mesmo assim e perdê-las?")) return;
     try { await apiCall("POST", "/api/auth/logout", {}); } catch (_) {}
     USER = null; wipeLocal(); renderAccount(); renderView();
+  }
+});
+
+/* ---------- Comunidade ---------- */
+let comPosts = [], comMsg = "";
+const fmtDate = (t) => new Date(t).toLocaleDateString("pt-BR");
+async function renderCommunity() {
+  const box = $("#comList");
+  box.innerHTML = '<p class="empty">Carregando…</p>';
+  try {
+    const r = await apiCall("GET", "/api/community");
+    comPosts = (await r.json()).posts || [];
+  } catch (_) { comPosts = []; box.innerHTML = '<p class="empty">Não consegui carregar a comunidade agora. Tente de novo em instantes.</p>'; return; }
+  drawCommunity();
+}
+function drawCommunity() {
+  const box = $("#comList");
+  if (!comPosts.length) { box.innerHTML = '<p class="empty">Ainda não há tierlists publicadas. Crie uma tierlist, entre na sua conta e clique em “Publicar na comunidade”.</p>'; return; }
+  box.innerHTML = comPosts.map((p) => {
+    const strip = `linear-gradient(90deg, ${p.tiers.map((t, i, a) => `${t.color} ${(i / a.length) * 100}% ${((i + 1) / a.length) * 100}%`).join(", ")})`;
+    return `<article class="pcard" aria-label="${esc(p.title)}">
+      <div class="pstrip" style="background:${strip}"></div>
+      <div class="pbody"><span class="badge">Tierlist</span><h3>${esc(p.title)}</h3><p><span class="by">por</span> ${esc(p.author)} · ${p.n} ${p.n === 1 ? "item" : "itens"}</p><div class="smp">${esc(p.sample.join(", "))}…</div><small>${fmtDate(p.updated)}</small></div>
+      <div class="pbtns"><button class="btn primary" type="button" data-cuse="${p.id}">Usar como modelo</button>${p.mine
+        ? `<button class="btn" type="button" data-cdel="${p.id}">Retirar</button>`
+        : `<button class="btn warn" type="button" data-crep="${p.id}">Denunciar</button>`}</div>
+    </article>`;
+  }).join("");
+}
+async function useCommunity(id, btn) {
+  btn.disabled = true;
+  try {
+    const r = await apiCall("GET", "/api/community/" + id), j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Não encontrada.");
+    for (const [pid, ph] of Object.entries(j.photos || {})) if (!LIB[pid]) LIB[pid] = { id: pid, name: ph.name, src: ph.src, credit: ph.credit || "" };
+    saveLib();
+    const data = normData("tier", j.data);
+    data.title = (j.title + " (minha versão)").slice(0, 60);
+    startNew("tier", null, data);
+  } catch (e) { alert(e.message || "Não consegui abrir esta tierlist."); }
+  btn.disabled = false;
+}
+$("#btnPublish").addEventListener("click", () => {
+  if (!USER) { openAuth("login"); $("#authErr").textContent = "Entre na sua conta para publicar na comunidade."; return; }
+  if (!hasContent("tier", M())) { setSaveState("Coloque itens na tierlist antes de publicar.", true); return; }
+  let nick = ""; try { nick = localStorage.getItem("escalacao-author") || ""; } catch (_) {}
+  $("#pubName").value = nick; $("#pubErr").textContent = "";
+  $("#pubDlg").showModal(); $("#pubName").focus();
+});
+$("#pubCancel").addEventListener("click", () => $("#pubDlg").close());
+$("#pubForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const author = $("#pubName").value.trim(), err = (m) => { $("#pubErr").textContent = m; };
+  if (author.length < 2) return err("Escolha um nome de 2 a 24 letras.");
+  const T = M(), lib = {};
+  for (const g of [...T.pool, ...T.tiers.flatMap((t) => t.items)]) if (g.u && LIB[g.id]) lib[g.id] = LIB[g.id];
+  save();   // garante que a lista está salva (e tem um id estável) antes de publicar
+  const ok = $("#pubOk"); ok.disabled = true; err("");
+  try {
+    const r = await apiCall("POST", "/api/community", { pid: S.cur.id, author, data: T, lib }), j = await r.json().catch(() => ({}));
+    if (r.status === 401) { lostSession(); $("#pubDlg").close(); return openAuth("login"); }
+    if (!r.ok) return err(j.error || "Não foi possível publicar.");
+    try { localStorage.setItem("escalacao-author", author); } catch (_) {}
+    $("#pubDlg").close(); setSaveState("Publicada na comunidade ✓", false);
+    setTimeout(showSync, 4000);
+  } catch (_) { err("Sem conexão com o servidor. Tente de novo."); }
+  finally { ok.disabled = false; }
+});
+document.addEventListener("click", async (e) => {
+  const t = e.target;
+  const use = t.closest("[data-cuse]"), del = t.closest("[data-cdel]"), rep = t.closest("[data-crep]");
+  if (use) return useCommunity(use.dataset.cuse, use);
+  if (del && confirm("Retirar esta tierlist da comunidade? A sua cópia nas suas listas continua.")) {
+    const r = await apiCall("DELETE", "/api/community/" + del.dataset.cdel);
+    if (r.ok) { comPosts = comPosts.filter((p) => p.id !== del.dataset.cdel); drawCommunity(); } else alert((await r.json().catch(() => ({}))).error || "Não consegui retirar.");
+  }
+  if (rep) {
+    if (!USER) { openAuth("login"); $("#authErr").textContent = "Entre na sua conta para denunciar."; return; }
+    if (!confirm("Denunciar esta tierlist como imprópria?")) return;
+    const r = await apiCall("POST", "/api/community/" + rep.dataset.crep + "/report", {});
+    alert(r.ok ? "Obrigado. A denúncia foi registrada." : (await r.json().catch(() => ({}))).error || "Não consegui denunciar.");
   }
 });
 

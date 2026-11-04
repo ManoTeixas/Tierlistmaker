@@ -1,6 +1,6 @@
 # Escalação
 
-Escalação de jogos, escalação de futebol e tierlist no mesmo site. Funciona com jogos da Steam, suas próprias fotos, imagens da web e itens de texto.
+Escalação de futebol e tierlist no mesmo site, com suas próprias fotos, imagens da web e elementos só de texto, contas por e-mail e uma aba Comunidade.
 
 ## Como rodar
 
@@ -14,18 +14,18 @@ Abra http://localhost:3000
 
 No Windows, se o PowerShell bloquear o `npm`, rode direto `node server.js`.
 
-O servidor serve o site e faz a ponte com a Steam e com os bancos de imagens. Abrir o `index.html` direto no navegador não funciona.
+O servidor serve o site, guarda as contas e a comunidade e faz a ponte com os bancos de imagens. Abrir o `index.html` direto no navegador não funciona.
 
 ## Tela inicial
 
-- **Escalação de jogos:** campo com categorias (melhor enredo, melhor combate…).
-- **Escalação de futebol:** campo com posições; use as fotos dos jogadores.
+- **Escalação de futebol:** campo com posições; use fotos ou elementos de texto.
 - **Tierlist:** escolha um modelo pronto ou comece do zero.
+- **Comunidade:** tierlists publicadas por outras pessoas.
 - **Minhas listas:** tudo o que você salvou. Abra, duplique ou exclua.
 
 ## Modelos de tierlist
 
-Filmes, Séries, Animes, Jogos, Comida, Bandas e artistas e Super-heróis. Todos vêm só com texto (20 elementos coloridos na área "Sem tier"); as imagens você adiciona depois, manualmente ou pela busca e tiers com nomes do tema. Você pode renomear os tiers, mudar as cores, reordenar, excluir, adicionar tiers e adicionar seus próprios itens. "Do zero" abre S, A, B, C e D vazios.
+Filmes, Séries, Animes, Jogos, Comida, Bandas e artistas e Super-heróis. Todos vêm só com texto (20 elementos coloridos na área "Sem tier"); as imagens você adiciona depois, manualmente ou pela busca. Os tiers têm nomes do tema. Você pode renomear os tiers, mudar as cores, reordenar, excluir, adicionar tiers e adicionar seus próprios itens. "Do zero" abre S, A, B, C e D vazios.
 
 ## Salvar e conta
 
@@ -37,13 +37,18 @@ Com conta (**Criar conta** / **Entrar**, por e-mail e senha), as listas e as fot
 - Se duas telas editam ao mesmo tempo, vale a versão mais recente de cada lista.
 - **Sair** apaga a cópia local do navegador (os dados continuam na conta). **Excluir conta** apaga tudo do servidor.
 - Senhas são guardadas com scrypt (nunca em texto), a sessão usa cookie HttpOnly e há limite de tentativas de login.
+- Listas do antigo modo "Escalação de jogos" viram escalações de futebol; os jogos da Steam viram elementos de texto.
 - Ainda não há "esqueci minha senha" nem confirmação por e-mail: isso exige um serviço de envio de e-mails.
+
+## Comunidade
+
+Com a conta ativa, abra uma tierlist e clique em **Publicar na comunidade**: ela aparece, com as fotos, na aba Comunidade, com o nome que você escolher (o e-mail nunca aparece). Publicar de novo a mesma lista atualiza a publicação. Na Comunidade, **Usar como modelo** abre uma cópia sua, **Retirar** tira a sua publicação e **Denunciar** esconde uma tierlist depois de 3 denúncias de pessoas diferentes. Limites: 30 publicações por conta, 300 itens e cerca de 3,5 MB de fotos por tierlist. Defina `ADMIN_EMAIL` no servidor para que esse e-mail possa retirar qualquer publicação.
 
 ## Como usar o editor
 
-- Painel da direita com quatro fontes de itens: **Steam** (busca de jogos), **Fotos** (suas imagens), **Imagens** (busca em bancos livres, por exemplo "comida") e o formulário **Novo elemento** da tierlist: escreva o texto (vários separados por vírgula), escolha a cor de fundo e clique em Adicionar elemento.
+- Fontes de itens: **Fotos** (suas imagens), **Imagens** (busca em bancos livres, por exemplo "comida") e o formulário **Novo elemento** da tierlist: escreva o texto (vários separados por vírgula), escolha a cor de fundo e clique em Adicionar elemento.
 - Clique em um item ou arraste até uma vaga ou tier. Nos campos, a seleção avança sozinha para a próxima vaga livre.
-- Campos: no painel da direita, **Elemento só de texto** coloca um nome escrito (com a cor de fundo que você escolher) na vaga marcada ou na primeira livre. Arraste a foto ou o ícone vazio para mover o jogador livremente (setas do teclado também). "Resetar posições" volta à formação. Solte sobre o técnico ou um reserva para trocar, ou sobre o painel para remover.
+- Campos: no painel da direita, **Elemento só de texto** cria um nome escrito (com a cor de fundo que você escolher). Fotos e imagens funcionam igual: com uma vaga marcada o item entra nela; sem vaga marcada vai para **Sem posição**, abaixo do campo. De lá você arrasta até a vaga (ou clica no elemento para colocá-lo na vaga marcada ou na primeira livre), e arrasta um jogador do campo de volta para lá. Arraste a foto ou o ícone vazio para mover o jogador livremente (setas do teclado também). "Resetar posições" volta à formação. Solte sobre o técnico ou um reserva para trocar, ou sobre o painel para remover.
 - Tierlist: clique na área de um tier para marcá-lo; os próximos itens vão para ele. Sem tier marcado, vão para "Sem tier". Arraste os itens entre tiers. "Mostrar nomes" exibe o nome sob cada item.
 - Fotos: botão "Adicionar fotos", Ctrl+V para colar, ou solte arquivos no painel, numa vaga ou num tier.
 - "Baixar imagem" gera um PNG para compartilhar.

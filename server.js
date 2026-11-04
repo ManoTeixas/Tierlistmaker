@@ -1,15 +1,14 @@
 // Servidor sem dependências (Node 18+).  Uso:  node server.js
-// Serve o site da pasta /public e faz de ponte para a Steam, porque o navegador
-// não consegue chamar a API da loja direto (a Steam não libera CORS).
+// Serve o site da pasta /public, contas e comunidade (auth.js, community.js)
+// e faz a busca de imagens livres (Openverse e Wikimedia Commons).
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const auth = require('./auth');
+const community = require('./community');
 
 const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC = path.join(__dirname, 'public');
-const UA = 'Mozilla/5.0 (compatible; escalacao-games/1.0)';
-const TTL = 10 * 60 * 1000;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -20,23 +19,17 @@ const MIME = {
   '.ico': 'image/x-icon',
 };
 
-const jsonCache = new Map(); // chave -> { t, data }
-const imgCache = new Map(); // "id:kind" -> { buf, type }
 
 function sendJson(res, code, body) {
   res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(body));
 }
 
-async function steamJson(url) {
-  const r = await fetch(url, {
-    headers: { 'User-Agent': UA, Accept: 'application/json' },
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!r.ok) throw new Error('A Steam respondeu ' + r.status);
-  return r.json();
-}
-
+const OPENVERSE = process.env.OPENVERSE_URL || 'https://api.openverse.org/v1/images/';
+const COMMONS = process.env.COMMONS_URL || 'https://commons.wikimedia.org/w/api.php';
+const TRANSLATE = process.env.TRANSLATE_URL || 'https://api.mymemory.translated.net/get';
+const TTL = 10 * 60 * 1000;
+const jsonCache = new Map(); // chave -> { t, data }
 async function cachedJson(key, load) {
   const hit = jsonCache.get(key);
   if (hit && Date.now() - hit.t < TTL) return hit.data;
@@ -45,70 +38,6 @@ async function cachedJson(key, load) {
   if (jsonCache.size > 300) jsonCache.delete(jsonCache.keys().next().value);
   return data;
 }
-
-function searchGames(term) {
-  return cachedJson('q:' + term.toLowerCase(), async () => {
-    const qs = new URLSearchParams({ term, l: 'portuguese', cc: 'BR' });
-    const data = await steamJson('https://store.steampowered.com/api/storesearch/?' + qs);
-    return (data.items || [])
-      .filter((i) => i.type === 'app')
-      .slice(0, 20)
-      .map((i) => ({
-        id: i.id,
-        name: i.name,
-        price: i.price ? { final: i.price.final, currency: i.price.currency } : null,
-      }));
-  });
-}
-
-function featuredGames() {
-  return cachedJson('featured', async () => {
-    const data = await steamJson(
-      'https://store.steampowered.com/api/featuredcategories?l=portuguese&cc=BR'
-    );
-    const items = (data.top_sellers && data.top_sellers.items) || [];
-    return items.slice(0, 20).map((i) => ({
-      id: i.id,
-      name: i.name,
-      price: i.final_price ? { final: i.final_price, currency: i.currency || 'BRL' } : null,
-    }));
-  });
-}
-
-// Algumas capas verticais não existem em jogos antigos: cai para a imagem horizontal.
-function imageSources(id, kind) {
-  const cf = `https://cdn.cloudflare.steamstatic.com/steam/apps/${id}`;
-  const ff = `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${id}`;
-  const header = [`${cf}/header.jpg`, `${ff}/header.jpg`, `${cf}/capsule_231x87.jpg`];
-  return kind === 'portrait'
-    ? [`${cf}/library_600x900.jpg`, `${ff}/library_600x900.jpg`, ...header]
-    : header;
-}
-
-async function getImage(id, kind) {
-  const key = id + ':' + kind;
-  if (imgCache.has(key)) return imgCache.get(key);
-  for (const url of imageSources(id, kind)) {
-    try {
-      const r = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(8000) });
-      const type = r.headers.get('content-type') || '';
-      if (r.ok && type.startsWith('image/')) {
-        const item = { buf: Buffer.from(await r.arrayBuffer()), type };
-        imgCache.set(key, item);
-        if (imgCache.size > 400) imgCache.delete(imgCache.keys().next().value);
-        return item;
-      }
-    } catch (_) {
-      /* tenta a próxima origem */
-    }
-  }
-  return null;
-}
-
-/* ---------- Busca de imagens (bancos livres: Openverse e Wikimedia Commons) ---------- */
-const OPENVERSE = process.env.OPENVERSE_URL || 'https://api.openverse.org/v1/images/';
-const COMMONS = process.env.COMMONS_URL || 'https://commons.wikimedia.org/w/api.php';
-const TRANSLATE = process.env.TRANSLATE_URL || 'https://api.mymemory.translated.net/get';
 const IMG_UA = 'escalacao-games/1.0 (projeto pessoal; busca de imagens livres)';
 // O proxy de imagens só fala com estes domínios (evita que o servidor seja usado para acessar qualquer endereço).
 const ALLOWED_HOSTS = ['openverse.org', 'wikimedia.org', ...(process.env.ALLOW_HOSTS || '').split(',').filter(Boolean)];
@@ -259,14 +188,7 @@ const server = http.createServer(async (req, res) => {
   try {
     if (url.pathname === '/healthz') return sendJson(res, 200, { ok: true });
     if (await auth.handle(req, res, url)) return;
-    if (url.pathname === '/api/search') {
-      const term = (url.searchParams.get('term') || '').trim().slice(0, 80);
-      if (term.length < 2) return sendJson(res, 400, { error: 'Digite pelo menos 2 letras.' });
-      return sendJson(res, 200, { items: await searchGames(term) });
-    }
-    if (url.pathname === '/api/featured') {
-      return sendJson(res, 200, { items: await featuredGames() });
-    }
+    if (await community.handle(req, res, url)) return;
     if (url.pathname === '/api/images') {
       const q = (url.searchParams.get('q') || '').trim().slice(0, 80);
       if (q.length < 2) return sendJson(res, 400, { error: 'Digite pelo menos 2 letras.' });
@@ -278,21 +200,12 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': img.type, 'Cache-Control': 'public, max-age=86400' });
       return res.end(img.buf);
     }
-    if (url.pathname === '/img') {
-      const id = url.searchParams.get('id') || '';
-      const kind = url.searchParams.get('kind') === 'portrait' ? 'portrait' : 'header';
-      if (!/^\d{1,10}$/.test(id)) return sendJson(res, 400, { error: 'id inválido' });
-      const img = await getImage(id, kind);
-      if (!img) return sendJson(res, 404, { error: 'sem imagem' });
-      res.writeHead(200, { 'Content-Type': img.type, 'Cache-Control': 'public, max-age=86400' });
-      return res.end(img.buf);
-    }
     return serveStatic(res, decodeURIComponent(url.pathname));
   } catch (e) {
-    return sendJson(res, 502, { error: 'Não consegui falar com a Steam agora. ' + e.message });
+    return sendJson(res, 502, { error: 'Não consegui falar com o serviço agora. ' + e.message });
   }
 });
 
 server.listen(PORT, () => {
-  console.log(`Escalação de jogos rodando em http://localhost:${PORT}  (dados em ${auth.DATA_DIR})`);
+  console.log(`Escalação rodando em http://localhost:${PORT}  (dados em ${auth.DATA_DIR})`);
 });

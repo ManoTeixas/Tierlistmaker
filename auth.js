@@ -122,6 +122,12 @@ function cleanSync(b) {
   return { projects, lib, deleted };
 }
 
+function originOk(req) {   // a origem tem de ser este mesmo site
+  const o = req.headers.origin;
+  if (!o) return true;
+  try { return new URL(o).host === req.headers.host; } catch (_) { return false; }
+}
+
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/;
 
 // Retorna true se tratou a requisição.
@@ -129,10 +135,7 @@ async function handle(req, res, url) {
   const p = url.pathname;
   if (!p.startsWith('/api/auth/') && p !== '/api/sync') return false;
   try {
-    if (req.method !== 'GET') {   // proteção contra CSRF: a origem tem de ser este mesmo site
-      const o = req.headers.origin;
-      if (o && new URL(o).host !== req.headers.host) return send(res, 403, { error: 'Origem não permitida.' }), true;
-    }
+    if (req.method !== 'GET' && !originOk(req)) return send(res, 403, { error: 'Origem não permitida.' }), true;   // proteção contra CSRF
 
     if (p === '/api/auth/me' && req.method === 'GET') {
       const u = sessionUser(req);
@@ -175,6 +178,7 @@ async function handle(req, res, url) {
       delete db.users[u.id]; byEmail.delete(u.email);
       for (const [h, s] of Object.entries(db.sessions)) if (s.uid === u.id) delete db.sessions[h];
       saveDb(); fs.promises.rm(blobFile(u.id), { force: true }).catch(() => {});
+      hooks.onDelete.forEach((fn) => { try { fn(u.id); } catch (_) {} });
       return send(res, 200, { ok: true }, { 'Set-Cookie': setCookie(req, '', 0) }), true;
     }
 
@@ -197,4 +201,5 @@ async function handle(req, res, url) {
   }
 }
 
-module.exports = { handle, DATA_DIR };
+const hooks = { onDelete: [] };   // outros módulos (comunidade) apagam os dados de quem exclui a conta
+module.exports = { handle, DATA_DIR, sessionUser, readJson, send, clientIp, tooMany, writeAtomic, originOk, hooks };
