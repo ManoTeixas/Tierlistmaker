@@ -1,0 +1,20 @@
+# Blueprint do Render: cria o site a partir do Dockerfile.
+# Plano gratuito: SEM disco persistente. As contas e listas do servidor são apagadas
+# a cada reinício ou novo deploy (as listas continuam no navegador de cada pessoa).
+# Para guardar de verdade: troque "plan" por um plano pago e adicione o bloco "disk" abaixo.
+services:
+  - type: web
+    name: tierlistmaker
+    runtime: docker
+    plan: free
+    branch: master
+    healthCheckPath: /healthz
+    envVars:
+      - key: TRUST_PROXY
+        value: "1"
+      - key: DATA_DIR
+        value: /data
+    # disk:
+    #   name: dados
+    #   mountPath: /data
+    #   sizeGB: 1
