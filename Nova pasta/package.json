@@ -1,0 +1,12 @@
+{
+  "name": "escalacao-games",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monte escalações de jogos da Steam em um campo de futebol",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
