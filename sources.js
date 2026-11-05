@@ -7,6 +7,7 @@ const URLS = {
   spotifyToken: process.env.SPOTIFY_TOKEN_URL || 'https://accounts.spotify.com/api/token',
   spotify: process.env.SPOTIFY_API_URL || 'https://api.spotify.com/v1/search',
   itunes: process.env.ITUNES_URL || 'https://itunes.apple.com/search',
+  tvmaze: process.env.TVMAZE_URL || 'https://api.tvmaze.com/search/shows',
   tmdb: process.env.TMDB_URL || 'https://api.themoviedb.org/3/search/',
   jikan: process.env.JIKAN_URL || 'https://api.jikan.moe/v4/anime',
   openlibrary: process.env.OPENLIBRARY_URL || 'https://openlibrary.org/search.json',
@@ -81,6 +82,18 @@ async function itunes(q) {
   return out;
 }
 
+// ----- Alternativas sem chave: filmes pela Apple (iTunes) e séries pelo TVMaze
+async function itunesMovies(q) {
+  const d = await getJson(URLS.itunes + '?' + new URLSearchParams({ term: q, media: 'movie', entity: 'movie', limit: '15', country: 'BR' }));
+  return (d.results || []).filter((m) => m.artworkUrl100 && m.trackName).map((m) =>
+    item('itunes:' + m.trackId, m.releaseDate ? `${m.trackName} (${String(m.releaseDate).slice(0, 4)})` : m.trackName, 'Filme · Apple', ref(String(m.artworkUrl100).replace(/\/\d+x\d+bb\./, '/600x900bb.'))));
+}
+async function tvmaze(q) {
+  const d = await getJson(URLS.tvmaze + '?' + new URLSearchParams({ q }));
+  return (Array.isArray(d) ? d : []).map((x) => x.show).filter((s) => s && s.image && (s.image.original || s.image.medium)).slice(0, 15).map((s) =>
+    item('tvmaze:' + s.id, s.premiered ? `${s.name} (${String(s.premiered).slice(0, 4)})` : s.name, 'Série · TVMaze', ref(s.image.original || s.image.medium)));
+}
+
 // ----- TMDB (filmes e séries; exige TMDB_API_KEY, gratuita)
 async function tmdb(kind, q) {
   const params = new URLSearchParams({ query: q, language: 'pt-BR', include_adult: 'false' });
@@ -125,15 +138,14 @@ const NEEDS = {
 };
 // "music" usa o Spotify quando há credenciais e, sem elas, o iTunes.
 const PROVIDERS = {
-  steam, music: (q) => (hasSpotify ? spotify(q) : itunes(q)), tmdb_movie: (q) => tmdb('movie', q), tmdb_tv: (q) => tmdb('tv', q), jikan, openlibrary,
+  steam, music: (q) => (hasSpotify ? spotify(q) : itunes(q)), tmdb_movie: (q) => (TMDB_KEY ? tmdb('movie', q).catch(() => itunesMovies(q)) : itunesMovies(q)), tmdb_tv: (q) => (TMDB_KEY ? tmdb('tv', q).catch(() => tvmaze(q)) : tvmaze(q)), jikan, openlibrary,
 };
-const available = () => ({ steam: true, music: true, tmdb_movie: !!TMDB_KEY, tmdb_tv: !!TMDB_KEY, jikan: true, openlibrary: true, spotify: hasSpotify });
+const available = () => ({ steam: true, music: true, tmdb_movie: true, tmdb_tv: true, tmdb: !!TMDB_KEY, jikan: true, openlibrary: true, spotify: hasSpotify });
 
 const cache = new Map();
 async function search(source, q) {
   const fn = PROVIDERS[source];
   if (!fn) throw Object.assign(new Error('Fonte desconhecida.'), { code: 400 });
-  if ((source === 'tmdb_movie' || source === 'tmdb_tv') && !TMDB_KEY) throw Object.assign(new Error(NEEDS[source]), { code: 503 });
   const key = source + '|' + q.toLowerCase(), hit = cache.get(key);
   if (hit && Date.now() - hit.t < 10 * 60 * 1000) return hit.items;
   const items = await fn(q);
