@@ -41,7 +41,7 @@ async function cachedJson(key, load) {
 }
 const IMG_UA = 'escalacao-games/1.0 (projeto pessoal; busca de imagens livres)';
 // O proxy de imagens só fala com estes domínios (evita que o servidor seja usado para acessar qualquer endereço).
-const ALLOWED_HOSTS = ['openverse.org', 'wikimedia.org', 'steamstatic.com', 'scdn.co', 'tmdb.org', 'mzstatic.com', 'myanimelist.net', 'openlibrary.org', 'archive.org', ...(process.env.ALLOW_HOSTS || '').split(',').filter(Boolean)];
+const ALLOWED_HOSTS = ['openverse.org', 'wikimedia.org', 'steamstatic.com', 'scdn.co', 'tmdb.org', 'mzstatic.com', 'myanimelist.net', 'anilist.co', 'openlibrary.org', 'archive.org', ...(process.env.ALLOW_HOSTS || '').split(',').filter(Boolean)];
 const hostOk = (h) => ALLOWED_HOSTS.some((a) => h === a || h.endsWith('.' + a));
 const proxied = (u) => '/imgproxy?u=' + encodeURIComponent(u);
 const MAX_IMG = 6 * 1024 * 1024;

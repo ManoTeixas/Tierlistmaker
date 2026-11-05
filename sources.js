@@ -10,13 +10,16 @@ const URLS = {
   tmdb: process.env.TMDB_URL || 'https://api.themoviedb.org/3/search/',
   jikan: process.env.JIKAN_URL || 'https://api.jikan.moe/v4/anime',
   openlibrary: process.env.OPENLIBRARY_URL || 'https://openlibrary.org/search.json',
+  anilist: process.env.ANILIST_URL || 'https://graphql.anilist.co',
 };
 const SPOTIFY_ID = process.env.SPOTIFY_CLIENT_ID || '', SPOTIFY_SECRET = process.env.SPOTIFY_CLIENT_SECRET || '';
 const TMDB_KEY = process.env.TMDB_API_KEY || '';
 const hasSpotify = !!(SPOTIFY_ID && SPOTIFY_SECRET);
 
 async function getJson(url, opts) {
-  const r = await fetch(url, Object.assign({ headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: AbortSignal.timeout(9000) }, opts));
+  let r;
+  try { r = await fetch(url, Object.assign({ headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: AbortSignal.timeout(9000) }, opts)); }
+  catch (e) { console.error('busca falhou', new URL(url).host, e.message, e.cause && (e.cause.code || e.cause.message)); throw new Error('não foi possível conectar a ' + new URL(url).host + (e.cause && e.cause.code ? ' (' + e.cause.code + ')' : '') + '.'); }
   if (!r.ok) throw new Error('O serviço de busca respondeu ' + r.status + '.');
   return r.json();
 }
@@ -93,6 +96,16 @@ async function tmdb(kind, q) {
 
 // ----- Animes (Jikan, dados do MyAnimeList; sem chave)
 async function jikan(q) {
+  try { const out = await jikanOnly(q); if (out.length) return out; } catch (e) { console.error('jikan:', e.message); }
+  return anilist(q);   // se o Jikan estiver fora do ar ou bloqueado, usa o AniList
+}
+async function anilist(q) {
+  const query = 'query($s:String){Page(perPage:15){media(search:$s,type:ANIME,isAdult:false,sort:SEARCH_MATCH){id title{romaji english} seasonYear coverImage{large}}}}';
+  const d = await getJson(URLS.anilist, { method: 'POST', headers: { 'User-Agent': UA, 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ query, variables: { s: q } }) });
+  return ((d.data && d.data.Page && d.data.Page.media) || []).filter((m) => m.coverImage && m.coverImage.large).map((m) =>
+    item('anilist:' + m.id, m.title.english || m.title.romaji, m.seasonYear ? 'Anime · ' + m.seasonYear : 'Anime', ref(m.coverImage.large)));
+}
+async function jikanOnly(q) {
   const d = await getJson(URLS.jikan + '?' + new URLSearchParams({ q, limit: '15', sfw: 'true' }));
   return (d.data || []).map((a) => ({ a, img: a.images && a.images.jpg && (a.images.jpg.large_image_url || a.images.jpg.image_url) }))
     .filter((x) => x.img).map(({ a, img }) => item('jikan:' + a.mal_id, a.title_english || a.title, a.year ? 'Anime · ' + a.year : 'Anime', ref(img)));
