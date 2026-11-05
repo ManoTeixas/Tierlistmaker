@@ -52,8 +52,52 @@
     .app { grid-template-columns: 200px minmax(0, 1fr) 370px; }
     .app[data-mode="tier"] { grid-template-columns: minmax(0, 1fr) 370px; }
   }
-  .app[data-mode="tier"] .bench, .app[data-mode="tier"] .stage { display: none; }
+  .app[data-mode="bracket"] { grid-template-columns: 1fr; }
+  @media (min-width: 1080px) { .app[data-mode="bracket"] { grid-template-columns: minmax(0, 1fr) 370px; } }
+  .app[data-mode="tier"] .bench, .app[data-mode="tier"] .stage, .app[data-mode="bracket"] .bench, .app[data-mode="bracket"] .stage { display: none; }
   .app:not([data-mode="tier"]) .tierwrap { display: none; }
+  .app:not([data-mode="bracket"]) .brwrap { display: none; }
+  .app[data-mode="bracket"] .slottext { display: none; }
+  .brwrap { min-width: 0; display: grid; gap: 12px; }
+  .brboard { overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  .brk { display: flex; gap: 22px; align-items: stretch; width: max-content; }
+  .brc { display: flex; flex-direction: column; width: 210px; }
+  .brc h3 { margin: 0 0 8px; text-align: center; font-family: var(--font-d); font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
+  .brc .brm { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 8px; }
+  .brmatch { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #151d2e; }
+  .brrow { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 3px 6px; cursor: pointer; font-size: 13px; font-weight: 600; position: relative; }
+  .brrow + .brrow { border-top: 1px solid var(--line); }
+  .brrow:hover { background: #1d2a44; }
+  .brrow.win { background: rgba(240,180,41,.18); box-shadow: inset 3px 0 0 var(--gold); }
+  .brrow.lose { opacity: .45; }
+  .brrow.empty { color: var(--mute); font-weight: 400; font-style: italic; }
+  .brrow.sel { outline: 2px solid var(--gold); outline-offset: -2px; }
+  .brrow .bt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .brrow .bc { flex: none; width: 28px; height: 28px; border-radius: 5px; overflow: hidden; background: #26324a; display: grid; place-items: center; font-size: 10px; }
+  .brrow .bc img, .brrow .bc .ini { width: 100%; height: 100%; object-fit: cover; display: grid; place-items: center; font-size: 10px; text-align: center; line-height: 1; }
+  .brrow button { flex: none; border: 0; border-radius: 50%; width: 20px; height: 20px; padding: 0; cursor: pointer; font-size: 11px; line-height: 1; }
+  .brrow .brx { background: rgba(13,19,32,.9); color: #fff; display: none; }
+  .brrow:hover .brx { display: block; }
+  .brrow .tplay { position: static; }
+  .brchamp { margin: auto 0; text-align: center; border: 2px solid var(--gold); border-radius: 14px; padding: 12px 8px; background: rgba(240,180,41,.1); }
+  .brchamp .bc { width: 96px; height: 96px; margin: 8px auto; border-radius: 10px; overflow: hidden; background: #26324a; display: grid; place-items: center; }
+  .brchamp .bc img, .brchamp .bc .ini { width: 100%; height: 100%; object-fit: cover; display: grid; place-items: center; text-align: center; padding: 4px; }
+  .brrow .bc .ini.tx, .brchamp .bc .ini.tx { font-size: 0; }
+  .brchamp b { font-size: 15px; }
+  .brsz { display: inline-flex; gap: 8px; align-items: center; margin-bottom: 10px; color: var(--mute); font-size: 14px; }
+  .catpick { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--mute); }
+  .brtool { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .brtool .btn { padding: 6px 12px; } #brZoomPct { min-width: 48px; text-align: center; color: var(--mute); font-size: 13px; }
+  .brwrap.full { position: fixed; inset: 0; z-index: 90; background: var(--bg, #0d1320); padding: 12px; grid-template-rows: auto 1fr; }
+  .brwrap.full .brboard { max-height: none; height: 100%; } .brwrap.full #brText { display: none; }
+  .brboard { max-height: 78vh; }
+  .pitch { user-select: none; -webkit-user-select: none; }
+  .fsbtn { position: absolute; top: 8px; right: 8px; z-index: 7; width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,.35); background: rgba(13,19,32,.7); color: #fff; font-size: 18px; line-height: 1; cursor: pointer; }
+  .fsbtn:hover { background: rgba(13,19,32,.95); }
+  body.pfull::before { content: ""; position: fixed; inset: 0; z-index: 89; background: #05080f; }
+  .pitch.full { position: fixed; z-index: 90; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(100vw, calc(100dvh * 5 / 7)) !important; border-radius: 0; box-shadow: none; }
+  .pitch.full .slot { --d: clamp(40px, 11.5cqw, 160px); --fs: clamp(8.5px, 2.1cqw, 24px); }
+  .brctl { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
   h2 { margin: 0 0 8px; font-family: var(--font-d); font-weight: 700; font-size: 18px; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
   .bench { display: grid; gap: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
@@ -378,6 +422,12 @@
   </div>
   <span class="modechip" id="modeChip"></span>
   <div class="controls">
+    <label class="catpick" for="catSel" title="A categoria define a fonte de busca (Steam, Spotify…)">Categoria<select id="catSel"></select></label>
+    <div class="grp hide" id="ctlBr">
+      <label for="brSizeEd">Times<select id="brSizeEd"><option>4</option><option>8</option><option>16</option><option>32</option><option>64</option></select></label>
+      <button class="btn" id="btnBrShuffle" type="button" title="Embaralha os times e apaga os resultados">Embaralhar</button>
+      <button class="btn" id="btnBrReset" type="button" title="Apaga só os vencedores marcados">Limpar resultados</button>
+    </div>
     <div class="grp" id="ctlPitch">
       <label for="formation">Formação<select id="formation"></select></label>
       <label for="template">Nomes das vagas<select id="template"></select></label>
@@ -404,8 +454,8 @@
   </aside>
 
   <section class="stage">
-    <div class="pitch" id="pitch"><div id="pitchSlots"></div></div>
-    <p class="movehint">Arraste a foto ou o ícone para mover o jogador pelo campo.</p>
+    <div class="pitch" id="pitch"><div id="pitchSlots"></div><button class="fsbtn" type="button" id="btnFull" title="Tela cheia (ou dois cliques no campo)" aria-label="Campo em tela cheia">⛶</button></div>
+    <p class="movehint">Arraste a foto ou o ícone para mover o jogador pelo campo. Dois cliques no campo abrem em tela cheia.</p>
     <div class="fpool">
       <h2 class="poolh">Sem posição</h2>
       <div class="tarea pool" id="fpool" data-area="pool" data-empty="Elementos adicionados sem vaga marcada ficam aqui. Arraste até uma vaga, ou clique no elemento para colocá-lo."></div>
@@ -421,6 +471,19 @@
     </form>
     <h2 class="poolh">Sem tier</h2>
     <div class="tarea pool" id="poolArea" data-area="pool" data-empty="Os itens adicionados sem tier marcado ficam aqui."></div>
+  </section>
+
+  <section class="brwrap" id="brWrap" aria-label="Chaveamento">
+    <div class="brtool" role="group" aria-label="Zoom do chaveamento">
+      <button class="btn" type="button" id="brZoomOut" aria-label="Diminuir">−</button><span id="brZoomPct"></span><button class="btn" type="button" id="brZoomIn" aria-label="Aumentar">+</button>
+      <button class="btn" type="button" id="brFit">Ajustar à tela</button><button class="btn" type="button" id="brFull">⛶ Tela cheia</button>
+    </div>
+    <div class="brboard" id="brScroll"><div class="brk" id="brBoard"></div></div>
+    <form class="textadd" id="brText" autocomplete="off">
+      <input id="brName" maxlength="300" placeholder="Novo time (ex.: Naruto). Separe vários com vírgula" aria-label="Nome do time. Separe vários com vírgula">
+      <label class="colorpick" title="Cor de fundo">Cor <input id="brColor" type="color" value="#6a3fa0" aria-label="Cor de fundo do time"></label>
+      <button class="btn" type="submit">Adicionar time</button>
+    </form>
   </section>
 
   <aside class="search" id="searchPanel" aria-label="Fotos e imagens">
@@ -514,7 +577,7 @@ const LINEUP_CAT = { posicoes: "futebol", numeros: "futebol", categorias: "jogos
 const LINEUP_ORDER = ["posicoes", "categorias", "filmes", "series", "animes", "musicas", "livros", "comida", "livre"];
 const KEYS = [...Array.from({ length: 11 }, (_, i) => "f" + i), "c", ...Array.from({ length: 7 }, (_, i) => "b" + i)];
 const isField = (k) => k[0] === "f";
-const MODES = ["futebol", "tier"];
+const MODES = ["futebol", "tier", "bracket"];
 const TIER_COLORS = ["#ff7f7f", "#ffbf7f", "#ffdf7f", "#ffff7f", "#bfff7f", "#7fff7f", "#7fffff", "#7fbfff", "#bf7fff", "#ff7fff"];
 
 const PITCH_LINES = [
@@ -546,12 +609,19 @@ const newTid = () => "t" + Date.now().toString(36) + tidN++;
 const defPitch = (formation, template, title) => ({ title, formation, template, slots: {}, labels: {}, pos: {}, pool: [] });
 const defTier = (title) => ({ title: title || "Minha tierlist", names: false, pool: [], tiers: ["S", "A", "B", "C", "D"].map((n, i) => ({ id: newTid(), name: n, color: TIER_COLORS[i], items: [] })) });
 const uidn = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-const MODE_NAME = { futebol: "Escalação", tier: "Tierlist" };
-const newData = (mode) => mode === "tier" ? defTier() : defPitch("f433", "posicoes", TEMPLATES.posicoes.title);
+const MODE_NAME = { futebol: "Escalação", tier: "Tierlist", bracket: "Chaveamento" };
+const BR_SIZES = [4, 8, 16, 32, 64];
+const defBracket = (size, title) => ({ title: title || "Meu chaveamento", size, entries: Array(size).fill(null), picks: {} });
+const newData = (mode) => mode === "tier" ? defTier() : mode === "bracket" ? defBracket(8) : defPitch("f433", "posicoes", TEMPLATES.posicoes.title);
 // Completa listas salvas por versões antigas e descarta dados inválidos.
 function normData(mode, d) {
   const base = newData(mode);
   if (!d || typeof d !== "object") return base;
+  if (mode === "bracket") {
+    if (!BR_SIZES.includes(d.size) || !Array.isArray(d.entries)) return base;
+    const e = d.entries.slice(0, d.size).map((g) => (g && typeof g === "object" ? g : null)); while (e.length < d.size) e.push(null);
+    return Object.assign(base, d, { entries: e, picks: d.picks && typeof d.picks === "object" ? d.picks : {} });
+  }
   if (mode === "tier") return Array.isArray(d.tiers) && Array.isArray(d.pool) ? Object.assign(base, d) : base;
   return FORMATIONS[d.formation] && TEMPLATES[d.template] ? Object.assign(base, d) : base;
 }
@@ -567,14 +637,14 @@ function fixProj(p) {
     for (const k of Object.keys(d.slots)) d.slots[k] = asText(d.slots[k]);
     d.pool = (d.pool || []).map(asText);
   }
-  const cat = CATEGORIES.some((k) => k.id === p.cat) ? p.cat : mode === "tier" ? "outros" : (LINEUP_CAT[d.template] || "outros");
+  const cat = CATEGORIES.some((k) => k.id === p.cat) ? p.cat : mode === "tier" || mode === "bracket" ? "outros" : (LINEUP_CAT[d.template] || "outros");
   return { id: p.id || "p" + uidn(), mode, cat, updated: p.updated || Date.now(), data: d };
 }
-const hasContent = (mode, d) => (mode === "tier" ? d.pool.length > 0 || d.tiers.some((t) => t.items.length) : Object.keys(d.slots).length > 0 || d.pool.length > 0);
+const hasContent = (mode, d) => (mode === "bracket" ? d.entries.some(Boolean) : mode === "tier" ? d.pool.length > 0 || d.tiers.some((t) => t.items.length) : Object.keys(d.slots).length > 0 || d.pool.length > 0);
 
 const KEY = "escalacao-v3", V2 = "escalacao-v2", V1 = "escalacao-games-v1", LIBKEY = "escalacao-lib-v1";
 // view: home | templates | edit.  cur = lista aberta no editor (só entra em projects ao ser salva).
-let S = { view: "home", tab: "fotos", mode: "futebol", projects: [], cur: null, catId: "outros", fmt: "", src: null };
+let S = { view: "home", tab: "fotos", mode: "futebol", projects: [], cur: null, catId: "outros", fmt: "", brSize: 8, brZoom: 1.25, src: null };
 let LIB = {};   // fotos enviadas: id -> { id, name, src }
 try {
   const v3 = JSON.parse(localStorage.getItem(KEY) || "null");
@@ -610,6 +680,9 @@ const saveLib = () => { try { localStorage.setItem(LIBKEY, JSON.stringify(LIB));
 
 const M = () => S.cur.data;
 const isTier = () => S.mode === "tier";
+const isBr = () => S.mode === "bracket";
+const isPitch = () => S.mode === "futebol";
+let brSel = null;      // vaga do chaveamento marcada (índice)
 const allProjects = () => (S.cur && !S.projects.includes(S.cur) ? [...S.projects, S.cur] : S.projects);
 let sel = null;        // vaga marcada (modos de campo)
 let tierSel = null;    // tier marcado (tierlist)
@@ -634,7 +707,8 @@ const coverHTML = (g) => {
 const itemOf = (id) => (LIB[id] ? { id, name: LIB[id].name, u: 1 } : null);
 function eachItem(fn) {
   for (const p of allProjects()) {
-    if (p.mode === "tier") { p.data.pool.forEach(fn); p.data.tiers.forEach((t) => t.items.forEach(fn)); }
+    if (p.mode === "bracket") p.data.entries.forEach((g) => g && fn(g));
+    else if (p.mode === "tier") { p.data.pool.forEach(fn); p.data.tiers.forEach((t) => t.items.forEach(fn)); }
     else { Object.values(p.data.slots).forEach(fn); p.data.pool.forEach(fn); }
   }
 }
@@ -713,37 +787,139 @@ function renderTier() {
   $("#poolArea").innerHTML = T.pool.map((g, j) => tileHTML(g, "pool", j)).join("");
 }
 
+/* ---------- Chaveamento ---------- */
+const brRounds = () => Math.log2(M().size);
+const brName = (r) => { const left = brRounds() - r; return left === 1 ? "Final" : left === 2 ? "Semifinal" : left === 3 ? "Quartas" : left === 4 ? "Oitavas" : `Rodada ${r + 1}`; };
+function brPart(r, m, s) {   // quem está em cada lado de uma partida
+  const B = M();
+  if (r === 0) return B.entries[2 * m + s] || null;
+  const w = B.picks[`${r - 1}-${2 * m + s}`];
+  return w === 0 || w === 1 ? brPart(r - 1, 2 * m + s, w) : null;
+}
+function brClearFrom(r, m) { const B = M(); for (let rr = r, mm = m; rr < brRounds(); rr++, mm >>= 1) delete B.picks[`${rr}-${mm}`]; }
+function brAdd(items) {
+  const B = M(); let n = 0;
+  for (const g of items) {
+    let i = brSel !== null && !B.entries[brSel] ? brSel : B.entries.findIndex((x) => !x);
+    if (i < 0) { setStatus("O chaveamento está cheio. Aumente o número de times ou remova um.", true); break; }
+    B.entries[i] = g; brClearFrom(0, i >> 1); n++;
+    brSel = null;
+  }
+  if (n) { save(); renderAll(); }
+}
+function brClick(r, m, s) {
+  const B = M(), g = brPart(r, m, s);
+  if (!g) { if (r === 0) { const i = 2 * m + s; brSel = brSel === i ? null : i; renderAll(); } return; }
+  const k = `${r}-${m}`;
+  if (B.picks[k] === s) brClearFrom(r, m); else { brClearFrom(r + 1, m >> 1); B.picks[k] = s; }
+  save(); renderAll();
+}
+function brRow(r, m, s) {
+  const g = brPart(r, m, s), B = M(), pk = B.picks[`${r}-${m}`], other = brPart(r, m, 1 - s);
+  const cls = ["brrow", !g ? "empty" : "", g && pk === s ? "win" : "", g && (pk === 0 || pk === 1) && pk !== s ? "lose" : "", r === 0 && brSel === 2 * m + s ? "sel" : ""].join(" ");
+  if (!g) return `<div class="${cls}" data-br="${r}-${m}-${s}"><span class="bt">${r === 0 ? "vaga " + (2 * m + s + 1) : "a definir"}</span></div>`;
+  return `<div class="${cls}" data-br="${r}-${m}-${s}" title="${esc(g.name)}"><span class="bc">${coverHTML(g)}</span><span class="bt">${esc(g.name)}</span>${g.p ? `<button class="tplay" type="button" data-play aria-label="Ouvir ${esc(g.name)}">▶</button>` : ""}${r === 0 ? `<button class="brx" type="button" data-brx="${2 * m + s}" aria-label="Remover ${esc(g.name)}">×</button>` : ""}</div>`;
+}
+function renderBracket() {
+  const B = M(), R = brRounds();
+  let html = "";
+  for (let r = 0; r < R; r++) {
+    const n = B.size >> (r + 1);
+    html += `<div class="brc"><h3>${brName(r)}</h3><div class="brm">` + Array.from({ length: n }, (_, m) => `<div class="brmatch">${brRow(r, m, 0)}${brRow(r, m, 1)}</div>`).join("") + "</div></div>";
+  }
+  const ch = brPart(R, 0, 0) || (B.picks[`${R - 1}-0`] !== undefined ? brPart(R - 1, 0, B.picks[`${R - 1}-0`]) : null);
+  html += `<div class="brc"><h3>Campeão</h3><div class="brm"><div class="brchamp">${ch ? `<span class="bc">${coverHTML(ch)}</span><b>${esc(ch.name)}</b>` : "<i>a definir</i>"}</div></div></div>`;
+  $("#brBoard").innerHTML = html; setBrZoom(S.brZoom);
+}
+function brResize(size) {
+  const B = M(), old = B.entries;
+  if (old.slice(size).some(Boolean) && !confirm("Alguns times ficam de fora do chaveamento menor. Continuar?")) { $("#brSizeEd").value = B.size; return; }
+  B.size = size; B.entries = Array.from({ length: size }, (_, i) => old[i] || null); B.picks = {}; brSel = null; save(); renderAll();
+}
+const BRZ = [0.3, 0.4, 0.5, 0.65, 0.8, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
+function setBrZoom(z) {
+  S.brZoom = Math.min(3, Math.max(0.25, z)); $("#brBoard").style.zoom = S.brZoom; $("#brZoomPct").textContent = Math.round(S.brZoom * 100) + "%";
+  try { localStorage.setItem("escalacao-brz", String(S.brZoom)); } catch (_) {}
+}
+try { const z = parseFloat(localStorage.getItem("escalacao-brz")); if (z >= 0.25 && z <= 3) S.brZoom = z; } catch (_) {}
+const stepZoom = (dir) => setBrZoom(dir > 0 ? BRZ.find((z) => z > S.brZoom + 0.01) || 3 : [...BRZ].reverse().find((z) => z < S.brZoom - 0.01) || 0.25);
+$("#brZoomIn").addEventListener("click", () => stepZoom(1));
+$("#brZoomOut").addEventListener("click", () => stepZoom(-1));
+$("#brFit").addEventListener("click", () => {
+  $("#brBoard").style.zoom = 1;
+  const w = $("#brBoard").getBoundingClientRect().width, hh = $("#brBoard").getBoundingClientRect().height, box = $("#brScroll");
+  setBrZoom(Math.min((box.clientWidth - 30) / w, (box.clientHeight - 30) / hh, 3));
+});
+$("#brScroll").addEventListener("wheel", (e) => { if (e.ctrlKey) { e.preventDefault(); stepZoom(e.deltaY < 0 ? 1 : -1); } }, { passive: false });
+// tela cheia: o campo e o chaveamento ocupam a tela toda (Esc ou o botão saem)
+function setFull(el, on, cls) {
+  el.classList.toggle("full", on); document.body.classList.toggle("pfull", on && el.id === "pitch");
+  if (on) { try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {}); } catch (_) {} }
+  else if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+}
+const exitFull = () => { for (const el of document.querySelectorAll(".pitch.full, .brwrap.full")) setFull(el, false); $("#brFull").textContent = "⛶ Tela cheia"; $("#btnFull").textContent = "⛶"; };
+$("#btnFull").addEventListener("click", () => { const p = $("#pitch"), on = !p.classList.contains("full"); setFull(p, on); $("#btnFull").textContent = on ? "✕" : "⛶"; });
+$("#pitch").addEventListener("dblclick", (e) => { if (e.target.closest(".slot, .fsbtn")) return; const p = $("#pitch"), on = !p.classList.contains("full"); setFull(p, on); $("#btnFull").textContent = on ? "✕" : "⛶"; });
+$("#brFull").addEventListener("click", () => { const w = $("#brWrap"), on = !w.classList.contains("full"); setFull(w, on); $("#brFull").textContent = on ? "✕ Sair da tela cheia" : "⛶ Tela cheia"; });
+document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement) exitFull(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") exitFull(); });
+$("#brSizeEd").addEventListener("change", (e) => brResize(+e.target.value));
+$("#btnBrReset").addEventListener("click", () => { M().picks = {}; save(); renderAll(); });
+$("#btnBrShuffle").addEventListener("click", () => {
+  const B = M(), a = B.entries.filter(Boolean);
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  B.entries = Array.from({ length: B.size }, (_, i) => a[i] || null); B.picks = {}; save(); renderAll();
+});
+$("#brText").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const names = $("#brName").value.split(",").map((s) => s.trim().slice(0, 40)).filter(Boolean).slice(0, 64), col = $("#brColor").value;
+  if (!names.length) return;
+  brAdd(names.map((n) => ({ id: "x" + uidn(), name: n, x: 1, c: col })));
+  $("#brName").value = ""; $("#brName").focus();
+});
+$("#catSel").innerHTML = CATEGORIES.map((k) => `<option value="${k.id}">${esc(k.name)}</option>`).join("");
+$("#catSel").addEventListener("change", (e) => {   // trocar a categoria muda a fonte de busca (Steam, Spotify…)
+  S.cur.cat = e.target.value; S.catId = S.cur.cat; S.src = null; resetSearch(); save(); renderAll();
+});
+
 function renderChrome() {
   $("#app").dataset.mode = S.mode;
   $("#modeChip").textContent = MODE_NAME[S.mode];
   setSaveState(S.projects.includes(S.cur) ? savedText() : "Ainda não salvo", false);
   $("#title").value = M().title;
-  if (!isTier()) { const t = TEMPLATES[M().template]; $("#coachHead").textContent = t.coachHead; $("#benchHead").textContent = t.benchHead; }
-  $("#ctlPitch").classList.toggle("hide", isTier());
+  if (isPitch()) { const t = TEMPLATES[M().template]; $("#coachHead").textContent = t.coachHead; $("#benchHead").textContent = t.benchHead; }
+  $("#ctlPitch").classList.toggle("hide", !isPitch());
   $("#ctlTier").classList.toggle("hide", !isTier());
+  $("#ctlBr").classList.toggle("hide", !isBr());
+  $("#catSel").value = S.cur.cat;
+  if (isBr()) $("#brSizeEd").value = M().size;
   if (isTier()) $("#showNames").checked = !!M().names;
-  else { $("#formation").value = M().formation; $("#template").value = M().template; }
+  else if (isPitch()) { $("#formation").value = M().formation; $("#template").value = M().template; }
   const tab = S.tab === "imgs" ? "imgs" : "fotos";
   fillSrc();
   for (const [t, name] of [["fotos", "Fotos"], ["imgs", "Imgs"]]) {
     $("#tab" + name).setAttribute("aria-selected", t === tab);
     $("#pane" + name).classList.toggle("hide", t !== tab);
   }
-  $("#hint").textContent = S.mode === "futebol"
+  $("#hint").textContent = isBr()
+    ? "Adicione os times pela busca, fotos ou texto: eles ocupam as vagas da primeira rodada. Clique em um time para dizer que ele venceu e avançar; clique em uma vaga vazia para escolher onde o próximo entra."
+    : S.mode === "futebol"
     ? "Adicione fotos, imagens ou texto: sem vaga marcada, o item fica em “Sem posição” e você o arrasta até a vaga. Arraste um item no campo para posicioná-lo. Clique no nome de uma vaga para renomear."
     : "Clique em um item para colocá-lo no tier marcado (ou em “Sem tier”), ou arraste até um tier. Arraste um item para cá para remover.";
 }
 
 function renderAll() {
   renderChrome();
-  if (isTier()) renderTier(); else renderPitch();
+  if (isBr()) renderBracket(); else if (isTier()) renderTier(); else renderPitch();
   updateTarget();
   renderLib();
 }
 
 function updateTarget() {
   const t = $("#target");
-  if (isTier()) {
+  if (isBr()) {
+    t.innerHTML = brSel !== null ? `Adicionando na vaga <b>${brSel + 1}</b> <button type="button" id="clearSel">limpar</button>` : "Os times entram na primeira vaga vazia.";
+  } else if (isTier()) {
     const tr = M().tiers.find((x) => x.id === tierSel);
     t.innerHTML = tr
       ? `Adicionando em: <b>${esc(tr.name)}</b> <button type="button" id="clearSel">limpar</button>`
@@ -770,6 +946,7 @@ function place(key, game) {
 }
 function addItem(game) {
   const g = clean(game);
+  if (isBr()) { brAdd([g]); return; }
   if (isTier()) {
     const T = M(), tr = T.tiers.find((x) => x.id === tierSel);
     (tr ? tr.items : T.pool).push(g);
@@ -823,6 +1000,7 @@ function tierFromTpl(t) {
 function renderView() {
   document.body.dataset.view = S.view;
   if (S.view !== "edit") stopPlayer();
+  exitFull();
   window.scrollTo(0, 0);
   if (S.view === "home") renderHome();
   else if (S.view === "pick") renderPick();
@@ -859,7 +1037,7 @@ function resetSearch() {   // a busca não leva resultados de uma lista para out
 }
 function openCur(p) {
   stopPlayer(); resetSearch();
-  S.cur = p; S.mode = p.mode; S.catId = p.cat; sel = null; tierSel = null; S.src = null;
+  S.cur = p; S.mode = p.mode; S.catId = p.cat; sel = null; tierSel = null; brSel = null; S.src = null;
   S.tab = catOf(p.cat).sources[0] !== "web" ? "imgs" : "fotos";   // categorias com busca própria abrem direto nela
   goView("edit");
 }
@@ -868,12 +1046,18 @@ function startNew(mode, tpl, ready) {
   if (!ready && mode === "tier" && ((tpl && tpl.cat) || S.catId) === "musica") data.names = true;   // nome da música embaixo da capa
   openCur({ id: "p" + uidn(), mode, cat: (tpl && tpl.cat) || S.catId, updated: Date.now(), data });
 }
+function startBracket(size, tpl) {
+  const d = defBracket(size, tpl ? "Chaveamento de " + tpl.name.toLowerCase() : null);
+  if (tpl) tpl.items.slice(0, size).forEach((n, i) => { d.entries[i] = { id: "x" + uidn(), name: n, x: 1 }; });
+  openCur({ id: "p" + uidn(), mode: "bracket", cat: (tpl && tpl.cat) || S.catId, updated: Date.now(), data: d });
+}
 function startLineup(key) {
   const t = TEMPLATES[key];
   openCur({ id: "p" + uidn(), mode: "futebol", cat: S.catId, updated: Date.now(), data: defPitch(t.formation, key, t.title) });
 }
 function projInfo(p) {
   const d = p.data;
+  if (p.mode === "bracket") return `${d.entries.filter(Boolean).length} de ${d.size} times${d.picks[`${Math.log2(d.size) - 1}-0`] !== undefined ? " · campeão definido" : ""}`;
   if (p.mode === "tier") { const n = d.pool.length + d.tiers.reduce((s, t) => s + t.items.length, 0); return `${n} ${n === 1 ? "item" : "itens"} em ${d.tiers.length} tiers`; }
   return `${Object.keys(d.slots).length} de 19 vagas preenchidas${d.pool.length ? ` · ${d.pool.length} sem posição` : ""}`;
 }
@@ -887,6 +1071,14 @@ const FORMATS = [
       + k.tiers.map((id) => TPLS.find((t) => t.id === id)).filter(Boolean).map((t) => `<button class="tcard" type="button" data-tpl="${t.id}">
       <div class="tstrip">${t.tiers.map((n, i) => `<span style="background:${TIER_COLORS[i]}">${esc(n[0].toUpperCase())}</span>`).join("")}</div>
       <div class="body"><h3>${esc(t.name)}</h3><span class="meta">${t.items.length} itens · ${t.tiers.length} tiers</span><span class="sample">Tiers: ${esc(t.tiers.join(" › "))}</span><span class="sample">${esc(t.items.slice(0, 4).join(", "))}…</span></div></button>`).join("") },
+  { id: "bracket", name: "Chaveamento",
+    head: () => `<label class="brsz">Times no chaveamento <select id="brSize" aria-label="Número de times">${BR_SIZES.map((n) => `<option value="${n}"${n === S.brSize ? " selected" : ""}>${n}</option>`).join("")}</select></label>`,
+    cards: (k) => `<button class="tcard blank" type="button" data-bk="">
+      <div class="tstrip">+</div>
+      <div class="body"><h3>Do zero</h3><span class="meta">${S.brSize} vagas vazias</span><span class="sample">Adicione os times pela busca, fotos ou texto.</span></div></button>`
+      + k.tiers.map((id) => TPLS.find((t) => t.id === id)).filter(Boolean).map((t) => `<button class="tcard" type="button" data-bk="${t.id}">
+      <div class="tstrip">${t.items.slice(0, 6).map((n, i) => `<span style="background:${TIER_COLORS[i % TIER_COLORS.length]}">${esc(n[0].toUpperCase())}</span>`).join("")}</div>
+      <div class="body"><h3>${esc(t.name)}</h3><span class="meta">${Math.min(S.brSize, t.items.length)} de ${S.brSize} vagas preenchidas</span><span class="sample">${esc(t.items.slice(0, Math.min(S.brSize, 4)).join(", "))}…</span></div></button>`).join("") },
   { id: "lineup", name: "Escalação",
     cards: (k) => [...new Set([...k.lineups, "livre"])].map((key) => {
       const t = TEMPLATES[key], labs = layoutOf(t.formation).map((s) => t.field(s));
@@ -901,11 +1093,12 @@ function renderCategory() {
   const k = catOf(S.catId);
   $("#catTitle").textContent = k.name + (S.fmt ? " · " + FORMATS.find((f) => f.id === S.fmt).name : "");
   $("#catDesc").textContent = k.desc;
-  $("#catFormats").innerHTML = FORMATS.filter((f) => !S.fmt || f.id === S.fmt).map((f) => `<div class="fsec"><h2>${esc(f.name)}</h2><div class="tgrid">${f.cards(k)}</div></div>`).join("");
+  $("#catFormats").innerHTML = FORMATS.filter((f) => !S.fmt || f.id === S.fmt).map((f) => `<div class="fsec"><h2>${esc(f.name)}</h2>${f.head ? f.head() : ""}<div class="tgrid">${f.cards(k)}</div></div>`).join("");
 }
+document.addEventListener("change", (e) => { if (e.target.id === "brSize") { S.brSize = +e.target.value; renderCategory(); } });
 function renderPick() {
   const lineup = S.fmt === "lineup";
-  $("#pickTitle").textContent = lineup ? "Escalações" : "Tierlists";
+  $("#pickTitle").textContent = lineup ? "Escalações" : S.fmt === "bracket" ? "Chaveamentos" : "Tierlists";
   $("#pickDesc").textContent = "Escolha a categoria.";
   $("#pickGrid").innerHTML = CATEGORIES.filter((k) => !lineup || k.lineups.length).map((k) => `<button class="mcard" type="button" data-go="category" data-cat="${k.id}" data-fmt="${S.fmt}">
       <div class="art" style="background:linear-gradient(135deg,hsl(${k.hue},45%,30%),hsl(${(k.hue + 50) % 360},45%,20%))"><span class="big">${esc(k.name[0])}</span></div>
@@ -919,7 +1112,7 @@ function renderHome() {
   ].map(([f, n, ic, hue, d]) => `<button class="mcard" type="button" data-go="pick" data-fmt="${f}">
       <div class="art" style="background:linear-gradient(135deg,hsl(${hue},45%,30%),hsl(${hue + 50},45%,20%))"><span class="big">${ic}</span></div>
       <div class="body"><h3>${n}</h3><p>${d}</p><span class="go">Escolher categoria →</span></div></button>`).join("")
-    + `<div class="mcard soon" aria-disabled="true"><div class="art" style="background:linear-gradient(135deg,#2a3243,#1a2030)"><span class="big">?</span></div><div class="body"><h3>Em breve</h3><p>Uma nova funcionalidade está a caminho.</p><span class="go">Novidade</span></div></div>`;
+    + `<button class="mcard" type="button" data-go="pick" data-fmt="bracket"><div class="art" style="background:linear-gradient(135deg,hsl(280,45%,30%),hsl(330,45%,20%))"><span class="big">🏆</span></div><div class="body"><h3>Chaveamentos</h3><p>Mata-mata de 4 a 64 times: escolha os vencedores de cada duelo até o campeão.</p><span class="go">Escolher categoria →</span></div></button>`;
   const all = [...S.projects].sort((a, b) => b.updated - a.updated);
   const used = CATEGORIES.filter((k) => all.some((p) => p.cat === k.id));
   if (myFilter && !used.some((k) => k.id === myFilter)) myFilter = "";
@@ -928,7 +1121,9 @@ function renderHome() {
     : "";
   const list = myFilter ? all.filter((p) => p.cat === myFilter) : all;
   $("#savedList").innerHTML = list.length ? list.map((p) => {
-    const strip = p.mode === "tier"
+    const strip = p.mode === "bracket"
+      ? "repeating-linear-gradient(90deg, #6a3fa0 0 18px, #1b2438 18px 22px)"
+      : p.mode === "tier"
       ? `linear-gradient(90deg, ${p.data.tiers.map((t, i, a) => `${t.color} ${(i / a.length) * 100}% ${((i + 1) / a.length) * 100}%`).join(", ")})`
       : "repeating-linear-gradient(90deg, var(--pitch-a) 0 26px, var(--pitch-b) 26px 52px)";
     return `<article class="pcard" data-open="${p.id}" tabindex="0" role="button" aria-label="Abrir ${esc(p.data.title)}">
@@ -996,7 +1191,8 @@ function renderLib() {
 }
 function purge(id) {   // tira a foto de todas as listas (salvas ou não) e da biblioteca
   for (const p of allProjects()) {
-    if (p.mode === "tier") {
+    if (p.mode === "bracket") { p.data.entries = p.data.entries.map((g) => (g && g.id === id ? null : g)); p.data.picks = {}; }
+    else if (p.mode === "tier") {
       p.data.pool = p.data.pool.filter((g) => g.id !== id);
       p.data.tiers.forEach((t) => { t.items = t.items.filter((g) => g.id !== id); });
     } else { p.data.pool = p.data.pool.filter((g) => g.id !== id); for (const k of Object.keys(p.data.slots)) if (p.data.slots[k].id === id) delete p.data.slots[k]; }
@@ -1083,10 +1279,16 @@ document.addEventListener("click", (e) => {
   // telas de início e de modelos
   const pl = t.closest("[data-play]");
   if (pl) {
+    const brr = pl.closest("[data-br]");
+    if (brr) { const [r, m, s] = brr.dataset.br.split("-").map(Number), g = brPart(r, m, s); if (g && g.p) playItem(g); return; }
     const tile = pl.closest(".tile"), L = listOf(tile.dataset.area), g = L && L[+tile.dataset.idx];
     if (g && g.p) playItem(g);
     return;
   }
+  const brx = t.closest("[data-brx]");
+  if (brx) { const i = +brx.dataset.brx; M().entries[i] = null; brClearFrom(0, i >> 1); save(); renderAll(); return; }
+  const brr = t.closest("[data-br]");
+  if (brr) { const [r, m, s] = brr.dataset.br.split("-").map(Number); brClick(r, m, s); return; }
   const go = t.closest("[data-go]");
   if (go) { goView(go.dataset.go, go.dataset.cat, go.dataset.fmt); return; }
   const mc = t.closest("[data-mycat]");
@@ -1095,6 +1297,8 @@ document.addEventListener("click", (e) => {
   if (ln) { startLineup(ln.dataset.ltpl); return; }
   const nw = t.closest("[data-new]");
   if (nw) { startNew(nw.dataset.new); return; }
+  const bk = t.closest("[data-bk]");
+  if (bk) { startBracket(S.brSize, bk.dataset.bk ? TPLS.find((x) => x.id === bk.dataset.bk) : null); return; }
   const tpl = t.closest("[data-tpl]");
   if (tpl) { startNew("tier", TPLS.find((x) => x.id === tpl.dataset.tpl)); return; }
   const dup = t.closest("[data-dup]");
@@ -1158,7 +1362,7 @@ document.addEventListener("click", (e) => {
     }
     return;
   }
-  if (t.id === "clearSel") { sel = null; tierSel = null; renderAll(); return; }
+  if (t.id === "clearSel") { sel = null; tierSel = null; brSel = null; renderAll(); return; }
   const tab = t.closest("[data-tab]");
   if (tab) { setTab(tab.dataset.tab); return; }
   const chip = t.closest("[data-chip]");
@@ -1439,6 +1643,10 @@ $("#btnAddTier").addEventListener("click", () => {
   save(); renderAll();
 });
 $("#btnClear").addEventListener("click", () => {
+  if (isBr()) {
+    if (!M().entries.some(Boolean) || !confirm("Tirar todos os times do chaveamento?")) return;
+    M().entries = Array(M().size).fill(null); M().picks = {}; brSel = null; save(); renderAll(); return;
+  }
   if (isTier()) {
     const T = M();
     if (!T.pool.length && !T.tiers.some((t) => t.items.length)) return;
@@ -1646,12 +1854,65 @@ async function drawTier() {
   return c;
 }
 
+async function drawBracket() {
+  const B = M(), R = B.size > 1 ? Math.log2(B.size) : 1, PAD = 40, CW = 230, GAP = 36, RH = 34, MH = RH * 2, UNIT = MH + 14;
+  const top = 150, H = top + Math.max((B.size / 2) * UNIT, 140) + 40, W = PAD * 2 + (R + 1) * CW + R * GAP;
+  const ents = B.entries.filter(Boolean), imgs = new Map();
+  await Promise.all(ents.map(async (g) => { imgs.set(g.id, await loadItemImage(g)); }));
+  const c = document.createElement("canvas"); c.width = Math.max(W, 1200); c.height = H;
+  const x = c.getContext("2d");
+  x.fillStyle = "#0d1320"; x.fillRect(0, 0, c.width, H);
+  titleBlock(x, null);
+  const cx = (r) => PAD + r * (CW + GAP);
+  const row = (g, px, py, state) => {
+    x.fillStyle = state === "win" ? "#3a3220" : "#151d2e"; x.fillRect(px, py, CW, RH);
+    if (state === "win") { x.fillStyle = "#f0b429"; x.fillRect(px, py, 4, RH); }
+    x.globalAlpha = state === "lose" ? 0.45 : 1;
+    if (g) {
+      const im = imgs.get(g.id);
+      x.save(); x.beginPath(); x.roundRect(px + 8, py + 4, RH - 8, RH - 8, 4); x.clip();
+      if (g.x) { x.fillStyle = txtBg(g); x.fillRect(px + 8, py + 4, RH - 8, RH - 8); } else if (im) drawCover(x, im, px + 8, py + 4, RH - 8, RH - 8); else { x.fillStyle = "#26324a"; x.fillRect(px + 8, py + 4, RH - 8, RH - 8); }
+      x.restore();
+      x.fillStyle = "#e8edf7"; x.font = '600 15px "Barlow", sans-serif'; x.textAlign = "left"; x.textBaseline = "middle";
+      let n = g.name; while (x.measureText(n).width > CW - RH - 22 && n.length > 3) n = n.slice(0, -1);
+      x.fillText(n === g.name ? n : n + "…", px + RH + 8, py + RH / 2 + 1);
+    } else { x.fillStyle = "#6b7890"; x.font = 'italic 14px "Barlow", sans-serif'; x.textAlign = "left"; x.textBaseline = "middle"; x.fillText("a definir", px + 10, py + RH / 2 + 1); }
+    x.globalAlpha = 1;
+  };
+  for (let r = 0; r < R; r++) {
+    x.fillStyle = "#8d9ab3"; x.font = '700 20px "Barlow Condensed", sans-serif'; x.textAlign = "center"; x.textBaseline = "alphabetic";
+    x.fillText(brName(r).toUpperCase(), cx(r) + CW / 2, top - 14);
+    for (let m = 0; m < B.size >> (r + 1); m++) {
+      const yy = top + (m + 0.5) * UNIT * 2 ** r - MH / 2;
+      const pk = B.picks[`${r}-${m}`];
+      x.strokeStyle = "#2a3652"; x.lineWidth = 1; x.strokeRect(cx(r) + 0.5, yy + 0.5, CW - 1, MH - 1);
+      row(brPart(r, m, 0), cx(r), yy, pk === 0 ? "win" : pk === 1 ? "lose" : "");
+      row(brPart(r, m, 1), cx(r), yy + RH, pk === 1 ? "win" : pk === 0 ? "lose" : "");
+      x.strokeStyle = "#2a3652"; x.beginPath(); x.moveTo(cx(r) + CW, yy + RH); x.lineTo(cx(r) + CW + GAP / 2, yy + RH);
+      const my = r === R - 1 ? yy + RH : top + (Math.floor(m / 2) + 0.5) * UNIT * 2 ** (r + 1) - MH / 2 + RH;
+      x.lineTo(cx(r) + CW + GAP / 2, my); x.lineTo(cx(r) + CW + GAP, my); x.stroke();
+    }
+  }
+  const ch = brPart(R, 0, 0) || (B.picks[`${R - 1}-0`] !== undefined ? brPart(R - 1, 0, B.picks[`${R - 1}-0`]) : null);
+  const fx = cx(R), fy = top + 0.5 * UNIT * 2 ** (R - 1) - 70;
+  x.fillStyle = "#f0b429"; x.font = '700 20px "Barlow Condensed", sans-serif'; x.textAlign = "center"; x.fillText("CAMPEÃO", fx + CW / 2, top - 14);
+  x.strokeStyle = "#f0b429"; x.lineWidth = 2; x.strokeRect(fx + 1, fy, CW - 2, 140);
+  if (ch) {
+    const im = imgs.get(ch.id), s = 80, px = fx + CW / 2 - s / 2;
+    x.save(); x.beginPath(); x.roundRect(px, fy + 10, s, s, 8); x.clip();
+    if (ch.x) { x.fillStyle = txtBg(ch); x.fillRect(px, fy + 10, s, s); } else if (im) drawCover(x, im, px, fy + 10, s, s); else { x.fillStyle = "#26324a"; x.fillRect(px, fy + 10, s, s); }
+    x.restore();
+    x.fillStyle = "#e8edf7"; x.font = '700 17px "Barlow", sans-serif'; x.textAlign = "center"; x.textBaseline = "alphabetic";
+    wrapLines(x, ch.name, CW - 16, 2).forEach((ln, k) => x.fillText(ln, fx + CW / 2, fy + 112 + k * 18));
+  }
+  return c;
+}
 async function exportPNG() {
   const btn = $("#btnExport");
   btn.disabled = true; btn.textContent = "Gerando…";
   try {
     await Promise.all([document.fonts.load('700 58px "Barlow Condensed"'), document.fonts.load('600 18px "Barlow"')]);
-    const c = isTier() ? await drawTier() : await drawPitch();
+    const c = isBr() ? await drawBracket() : isTier() ? await drawTier() : await drawPitch();
     const blob = await new Promise((res) => c.toBlob(res, "image/png"));
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
