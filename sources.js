@@ -84,9 +84,17 @@ async function itunes(q) {
 
 // ----- Alternativas sem chave: filmes pela Apple (iTunes) e séries pelo TVMaze
 async function itunesMovies(q) {
-  const d = await getJson(URLS.itunes + '?' + new URLSearchParams({ term: q, media: 'movie', entity: 'movie', limit: '15', country: 'BR' }));
-  return (d.results || []).filter((m) => m.artworkUrl100 && m.trackName).map((m) =>
-    item('itunes:' + m.trackId, m.releaseDate ? `${m.trackName} (${String(m.releaseDate).slice(0, 4)})` : m.trackName, 'Filme · Apple', ref(String(m.artworkUrl100).replace(/\/\d+x\d+bb\./, '/600x900bb.'))));
+  // busca no Brasil (títulos em português) e nos EUA (títulos em inglês) e junta os resultados
+  const call = (country) => getJson(URLS.itunes + '?' + new URLSearchParams({ term: q, media: 'movie', entity: 'movie', limit: '15', country })).catch(() => ({ results: [] }));
+  const [br, us] = await Promise.all([call('BR'), call('US')]);
+  const seen = new Set(), out = [];
+  const n = Math.max((br.results || []).length, (us.results || []).length);
+  for (let i = 0; i < n; i++) for (const m of [(br.results || [])[i], (us.results || [])[i]]) {
+    if (!m || !m.artworkUrl100 || !m.trackName || seen.has(m.trackId)) continue;
+    seen.add(m.trackId);
+    out.push(item('itunes:' + m.trackId, m.releaseDate ? `${m.trackName} (${String(m.releaseDate).slice(0, 4)})` : m.trackName, 'Filme · Apple', ref(String(m.artworkUrl100).replace(/\/\d+x\d+bb\./, '/600x900bb.'))));
+  }
+  return out.slice(0, 20);
 }
 async function tvmaze(q) {
   const d = await getJson(URLS.tvmaze + '?' + new URLSearchParams({ q }));
