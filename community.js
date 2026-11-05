@@ -45,7 +45,7 @@ function cleanTier(data, lib) {
       }
       return { id, name, x: 1 };   // foto sem arquivo válido vira item de texto
     }
-    if (g.r !== undefined) return sources.validRef(g.r) ? { id, name, r: g.r } : { id, name, x: 1 };   // capa de uma fonte (Steam, filmes…)
+    if (g.r !== undefined) return sources.validRef(g.r) ? Object.assign({ id, name, r: g.r }, sources.validPlay(g.p) ? { p: g.p } : {}) : { id, name, x: 1 };   // capa de uma fonte (Steam, filmes…)
     const out = { id, name, x: 1 };
     if (typeof g.c === 'string' && HEX.test(g.c)) out.c = g.c;
     return out;

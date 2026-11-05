@@ -96,3 +96,6 @@ Variáveis de ambiente (no Render: Environment):
 - `TMDB_API_KEY`: chave gratuita em themoviedb.org. O site exibe o aviso de atribuição exigido pelo TMDB.
 
 Observações: capas pertencem aos respectivos donos. Os termos do Spotify pedem atribuição e proíbem cortar as capas, o que conflita com os blocos cortados e com a exportação em PNG; use por sua conta e risco. Itens de fontes guardam só a referência da capa (o servidor busca na hora), não a imagem.
+
+## Ouvir músicas
+Itens de música mostram um botão ▶ no bloco. Com Spotify configurado, abre o player oficial do Spotify (prévia de 30 s; completo se a pessoa estiver logada no Spotify no navegador). Sem Spotify, toca a prévia de 30 s da Apple. Em tierlists de Músicas o nome fica embaixo da capa por padrão.

@@ -128,6 +128,11 @@
   .tile:hover .cap, .tier.names .tile .cap, .tierwrap.names .tile .cap { display: block; }
   .trm { position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; border: 0; background: rgba(13,19,32,.9); color: #fff; font-size: 13px; line-height: 1; cursor: pointer; display: none; place-items: center; }
   .tile:hover .trm, .tile:focus-within .trm { display: grid; }
+  .tplay { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: rgba(29,185,84,.95); color: #04140a; font-size: 10px; line-height: 1; cursor: pointer; display: grid; place-items: center; padding: 0 0 0 2px; }
+  #player { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; background: var(--panel); border-top: 1px solid var(--line); padding: 8px 14px; display: flex; align-items: center; gap: 12px; }
+  #player.hide { display: none; }
+  #plName { font-weight: 600; font-size: 14px; flex: 0 1 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #plBody { flex: 1; min-width: 0; } #plBody iframe { width: 100%; height: 80px; border: 0; border-radius: 12px; display: block; } #plBody audio { width: 100%; }
   @media (hover: none) { .trm { display: grid; } }
   @media (max-width: 640px) {
     .trow { grid-template-columns: 70px minmax(0, 1fr); }
@@ -169,8 +174,9 @@
 
   /* Telas: início, modelos e editor */
   body:not([data-view="edit"]) .top, body:not([data-view="edit"]) .app { display: none; }
-  body[data-view="edit"] .home, body:not([data-view="home"]) #home, body:not([data-view="category"]) #category, body:not([data-view="community"]) #community { display: none; }
+  body[data-view="edit"] .home, body:not([data-view="home"]) #home, body:not([data-view="category"]) #category, body:not([data-view="pick"]) #pick, body:not([data-view="community"]) #community { display: none; }
   .cgrid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+  .mcard.soon { opacity: .55; cursor: default; } .mcard.soon:hover { transform: none; border-color: var(--line); }
   .mcard .art .big { font-family: var(--font-d); font-weight: 700; font-size: 64px; color: rgba(255,255,255,.9); }
   .fsec h2 { margin: 0 0 12px; }
   .fsec + .fsec { margin-top: 28px; }
@@ -284,8 +290,8 @@
   </div>
 
   <div>
-    <h2>Escolha uma categoria</h2>
-    <div class="mcards cgrid" id="catGrid"></div>
+    <h2>Criar</h2>
+    <div class="mcards cgrid" id="fmtGrid"></div>
   </div>
 
   <div>
@@ -303,6 +309,13 @@
     <div class="catbar" id="myCats" role="group" aria-label="Filtrar por categoria"></div>
     <div class="saved" id="savedList"></div>
   </div>
+</section>
+
+<!-- Escolha da categoria (depois de Tierlist ou Escalação) -->
+<section class="home" id="pick" aria-label="Escolher categoria">
+  <button class="btn back" type="button" data-go="home">← Início</button>
+  <div class="hhead"><span class="mark" aria-hidden="true"></span><div><h1 id="pickTitle"></h1><p id="pickDesc"></p></div></div>
+  <div class="mcards cgrid" id="pickGrid"></div>
 </section>
 
 <!-- Categoria: formatos e modelos -->
@@ -381,6 +394,8 @@
     <span id="saveState" role="status" aria-live="polite"></span>
   </div>
 </header>
+
+<div id="player" class="hide" role="region" aria-label="Player"><span id="plName"></span><div id="plBody"></div><button class="btn" type="button" id="plClose" aria-label="Fechar player">×</button></div>
 
 <main class="app" id="app" data-mode="futebol">
   <aside class="bench" aria-label="Técnico e reservas">
@@ -559,7 +574,7 @@ const hasContent = (mode, d) => (mode === "tier" ? d.pool.length > 0 || d.tiers.
 
 const KEY = "escalacao-v3", V2 = "escalacao-v2", V1 = "escalacao-games-v1", LIBKEY = "escalacao-lib-v1";
 // view: home | templates | edit.  cur = lista aberta no editor (só entra em projects ao ser salva).
-let S = { view: "home", tab: "fotos", mode: "futebol", projects: [], cur: null, catId: "outros", src: null };
+let S = { view: "home", tab: "fotos", mode: "futebol", projects: [], cur: null, catId: "outros", fmt: "", src: null };
 let LIB = {};   // fotos enviadas: id -> { id, name, src }
 try {
   const v3 = JSON.parse(localStorage.getItem(KEY) || "null");
@@ -601,7 +616,7 @@ let tierSel = null;    // tier marcado (tierlist)
 let LABELS = {}, DEFAULTS = {}, LAY = {};
 
 // Tipos de item: foto enviada {u:1}, capa de uma fonte de busca {r:"steam:123"}, ou texto {x:1, c?: cor}
-const clean = (g) => (g.u ? { id: g.id, name: g.name, u: 1 } : g.r ? { id: g.id, name: g.name, r: g.r } : g.x ? (g.ico || g.c ? Object.assign({ id: g.id, name: g.name, x: 1 }, g.ico ? { ico: g.ico } : {}, g.c ? { c: g.c } : {}) : { id: g.id, name: g.name, x: 1 }) : { id: g.id, name: g.name });
+const clean = (g) => (g.u ? { id: g.id, name: g.name, u: 1 } : g.r ? Object.assign({ id: g.id, name: g.name, r: g.r }, g.p ? { p: g.p } : {}) : g.x ? (g.ico || g.c ? Object.assign({ id: g.id, name: g.name, x: 1 }, g.ico ? { ico: g.ico } : {}, g.c ? { c: g.c } : {}) : { id: g.id, name: g.name, x: 1 }) : { id: g.id, name: g.name });
 function srcOf(g, kind) {
   if (g.x) return "";
   if (g.r) return "/cover?r=" + encodeURIComponent(g.r);   // capa de uma fonte (Steam, filmes…): o servidor entrega
@@ -679,7 +694,7 @@ function tileHTML(g, area, idx) {
   const body = g.x
     ? `<span class="txt" style="background:${txtBg(g)};color:${txtFg(g)}">${g.ico ? `<b>${esc(g.ico)}</b>` : ""}<i>${esc(g.name)}</i></span>`
     : `${coverHTML(g)}<span class="cap">${esc(g.name)}</span>`;
-  return `<div class="tile" draggable="true" data-area="${area}" data-idx="${idx}" title="${esc(g.name)}">${body}<button class="trm" type="button" data-trm aria-label="Remover ${esc(g.name)}">×</button></div>`;
+  return `<div class="tile" draggable="true" data-area="${area}" data-idx="${idx}" title="${esc(g.name)}">${body}${g.p ? `<button class="tplay" type="button" data-play aria-label="Ouvir ${esc(g.name)}">▶</button>` : ""}<button class="trm" type="button" data-trm aria-label="Remover ${esc(g.name)}">×</button></div>`;
 }
 const tierFont = (name) => { const n = Math.max(...name.split(/\s+/).map((w) => w.length), 1); return n <= 4 ? 28 : n <= 6 ? 24 : n <= 9 ? 20 : 16; };
 function renderTier() {
@@ -807,30 +822,50 @@ function tierFromTpl(t) {
 }
 function renderView() {
   document.body.dataset.view = S.view;
+  if (S.view !== "edit") stopPlayer();
   window.scrollTo(0, 0);
   if (S.view === "home") renderHome();
+  else if (S.view === "pick") renderPick();
   else if (S.view === "category") renderCategory();
   else if (S.view === "community") renderCommunity();
   else renderAll();
 }
-function goView(v, catId) {
+function goView(v, catId, fmt) {
   if (v === "edit" && !S.cur) v = "home";
   if (catId) S.catId = catId;
-  S.view = v; history.pushState({ v, c: S.catId }, ""); renderView();
+  if (fmt !== undefined) S.fmt = fmt;
+  S.view = v; history.pushState({ v, c: S.catId, f: S.fmt }, ""); renderView();
 }
 window.addEventListener("popstate", (e) => {
   let v = (e.state && e.state.v) || "home";
   if (v === "edit" && !S.cur) v = "home";
   if (e.state && e.state.c) S.catId = e.state.c;
+  if (e.state) S.fmt = e.state.f || "";
   S.view = v; renderView();
 });
+function stopPlayer() { $("#plBody").innerHTML = ""; $("#player").classList.add("hide"); }
+function playItem(g) {
+  const m = /^sp:(track|album|artist):([A-Za-z0-9]+)$/.exec(g.p), it = /^it:(https:\/\/.+)$/.exec(g.p);
+  $("#plName").textContent = g.name;
+  if (m) $("#plBody").innerHTML = `<iframe src="https://open.spotify.com/embed/${m[1]}/${m[2]}?theme=0" allow="autoplay; clipboard-write; encrypted-media" loading="lazy" title="Spotify"></iframe>`;
+  else if (it) { const a = document.createElement("audio"); a.controls = true; a.autoplay = true; a.src = it[1]; $("#plBody").replaceChildren(a); }
+  else return;
+  $("#player").classList.remove("hide");
+}
+$("#plClose").addEventListener("click", stopPlayer);
+function resetSearch() {   // a busca não leva resultados de uma lista para outra
+  if (ictl) ictl.abort();
+  clearTimeout(itimer); webItems = []; $("#qi").value = ""; $("#imgGrid").innerHTML = ""; setStatus("", false, "imgs"); setStatus("", false, "fotos");
+}
 function openCur(p) {
+  stopPlayer(); resetSearch();
   S.cur = p; S.mode = p.mode; S.catId = p.cat; sel = null; tierSel = null; S.src = null;
   S.tab = catOf(p.cat).sources[0] !== "web" ? "imgs" : "fotos";   // categorias com busca própria abrem direto nela
   goView("edit");
 }
 function startNew(mode, tpl, ready) {
   const data = ready || (mode === "tier" && tpl ? tierFromTpl(tpl) : newData(mode));
+  if (!ready && mode === "tier" && ((tpl && tpl.cat) || S.catId) === "musica") data.names = true;   // nome da música embaixo da capa
   openCur({ id: "p" + uidn(), mode, cat: (tpl && tpl.cat) || S.catId, updated: Date.now(), data });
 }
 function startLineup(key) {
@@ -864,15 +899,27 @@ const FORMATS = [
 const catOf = (id) => CATEGORIES.find((k) => k.id === id) || CATEGORIES[CATEGORIES.length - 1];
 function renderCategory() {
   const k = catOf(S.catId);
-  $("#catTitle").textContent = k.name;
+  $("#catTitle").textContent = k.name + (S.fmt ? " · " + FORMATS.find((f) => f.id === S.fmt).name : "");
   $("#catDesc").textContent = k.desc;
-  $("#catFormats").innerHTML = FORMATS.map((f) => `<div class="fsec"><h2>${esc(f.name)}</h2><div class="tgrid">${f.cards(k)}</div></div>`).join("");
+  $("#catFormats").innerHTML = FORMATS.filter((f) => !S.fmt || f.id === S.fmt).map((f) => `<div class="fsec"><h2>${esc(f.name)}</h2><div class="tgrid">${f.cards(k)}</div></div>`).join("");
+}
+function renderPick() {
+  const lineup = S.fmt === "lineup";
+  $("#pickTitle").textContent = lineup ? "Escalações" : "Tierlists";
+  $("#pickDesc").textContent = "Escolha a categoria.";
+  $("#pickGrid").innerHTML = CATEGORIES.filter((k) => !lineup || k.lineups.length).map((k) => `<button class="mcard" type="button" data-go="category" data-cat="${k.id}" data-fmt="${S.fmt}">
+      <div class="art" style="background:linear-gradient(135deg,hsl(${k.hue},45%,30%),hsl(${(k.hue + 50) % 360},45%,20%))"><span class="big">${esc(k.name[0])}</span></div>
+      <div class="body"><h3>${esc(k.name)}</h3><p>${esc(k.desc)}</p><span class="go">Abrir →</span></div></button>`).join("");
 }
 let myFilter = "";
 function renderHome() {
-  $("#catGrid").innerHTML = CATEGORIES.map((k) => `<button class="mcard" type="button" data-go="category" data-cat="${k.id}">
-      <div class="art" style="background:linear-gradient(135deg,hsl(${k.hue},45%,30%),hsl(${(k.hue + 50) % 360},45%,20%))"><span class="big">${esc(k.name[0])}</span></div>
-      <div class="body"><h3>${esc(k.name)}</h3><p>${esc(k.desc)}</p><span class="go">Abrir →</span></div></button>`).join("");
+  $("#fmtGrid").innerHTML = [
+    ["tier", "Tierlists", "T", 210, "Ranqueie qualquer coisa em tiers: jogos, músicas, filmes, animes, comida…"],
+    ["lineup", "Escalações", "⚽", 140, "Escalações de futebol e versões com prêmios e vagas temáticas (melhor roteiro, melhor trilha…)."],
+  ].map(([f, n, ic, hue, d]) => `<button class="mcard" type="button" data-go="pick" data-fmt="${f}">
+      <div class="art" style="background:linear-gradient(135deg,hsl(${hue},45%,30%),hsl(${hue + 50},45%,20%))"><span class="big">${ic}</span></div>
+      <div class="body"><h3>${n}</h3><p>${d}</p><span class="go">Escolher categoria →</span></div></button>`).join("")
+    + `<div class="mcard soon" aria-disabled="true"><div class="art" style="background:linear-gradient(135deg,#2a3243,#1a2030)"><span class="big">?</span></div><div class="body"><h3>Em breve</h3><p>Uma nova funcionalidade está a caminho.</p><span class="go">Novidade</span></div></div>`;
   const all = [...S.projects].sort((a, b) => b.updated - a.updated);
   const used = CATEGORIES.filter((k) => all.some((p) => p.cat === k.id));
   if (myFilter && !used.some((k) => k.id === myFilter)) myFilter = "";
@@ -1012,7 +1059,7 @@ $("#srcSel").addEventListener("change", (e) => {
 fetch("/api/sources").then((r) => r.json()).then((j) => { AV = j.available || {}; if (S.cur && S.view === "edit") fillSrc(); }).catch(() => {});
 // Baixa a imagem pelo servidor, reduz e guarda em Fotos (com autor e licença), para poder usar em qualquer lista.
 async function importWeb(w) {
-  if (w.r) return { id: w.id, name: w.name, r: w.r };   // item de uma fonte (Steam, filmes…): guarda só a referência da capa
+  if (w.r) return Object.assign({ id: w.id, name: w.name, r: w.r }, w.p ? { p: w.p } : {});   // item de uma fonte (Steam, filmes…): guarda só a referência da capa
   const had = Object.values(LIB).find((l) => l.web === w.id);
   if (had) return { id: had.id, name: had.name, u: 1 };
   try {
@@ -1034,8 +1081,14 @@ document.addEventListener("click", (e) => {
   if (suppressClick) return;
   const t = e.target;
   // telas de início e de modelos
+  const pl = t.closest("[data-play]");
+  if (pl) {
+    const tile = pl.closest(".tile"), L = listOf(tile.dataset.area), g = L && L[+tile.dataset.idx];
+    if (g && g.p) playItem(g);
+    return;
+  }
   const go = t.closest("[data-go]");
-  if (go) { goView(go.dataset.go, go.dataset.cat); return; }
+  if (go) { goView(go.dataset.go, go.dataset.cat, go.dataset.fmt); return; }
   const mc = t.closest("[data-mycat]");
   if (mc) { myFilter = mc.dataset.mycat; renderHome(); return; }
   const ln = t.closest("[data-ltpl]");

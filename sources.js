@@ -21,7 +21,10 @@ async function getJson(url, opts) {
   return r.json();
 }
 const ref = (u) => 'u:' + u;
-const item = (id, name, sub, r) => ({ id, name: String(name).slice(0, 80), sub: sub ? String(sub).slice(0, 60) : '', r, thumb: '/cover?r=' + encodeURIComponent(r) });
+const item = (id, name, sub, r, p) => Object.assign({ id, name: String(name).slice(0, 80), sub: sub ? String(sub).slice(0, 60) : '', r, thumb: '/cover?r=' + encodeURIComponent(r) }, p ? { p } : {});
+// p = como ouvir: 'sp:track:ID' (player do Spotify) ou 'it:https://…' (prévia de 30 s da Apple)
+const PLAY = /^(sp:(track|album|artist):[A-Za-z0-9]{10,32}|it:https:\/\/[a-z0-9.-]+\.(itunes\.apple\.com|mzstatic\.com)\/[\w\-./%~+=]{1,300})$/;
+const validPlay = (p) => typeof p === 'string' && p.length <= 400 && PLAY.test(p);
 const year = (d) => (d ? String(d).slice(0, 4) : '');
 
 // ----- Steam (sem chave)
@@ -48,14 +51,14 @@ async function spotify(q) {
   // desde fev/2026 o limite máximo por busca é 10; pedimos poucos de cada tipo
   const d = await getJson(URLS.spotify + '?' + new URLSearchParams({ q, type: 'track,album,artist', limit: '5', market: 'BR' }), { headers: { 'User-Agent': UA, Authorization: 'Bearer ' + tok } });
   const out = [];
-  const add = (id, name, sub, img) => { if (img) out.push(item('spotify:' + id, name, sub, ref(img))); };
+  const add = (id, name, sub, img, type) => { if (img) out.push(item('spotify:' + id, name, sub, ref(img), `sp:${type}:${id}`)); };
   const L = (k) => (d[k] && d[k].items) || [];
   const n = Math.max(L('tracks').length, L('albums').length, L('artists').length);
   for (let i = 0; i < n; i++) {   // intercala os três tipos
     const t = L('tracks')[i], a = L('albums')[i], r = L('artists')[i];
-    if (t) add(t.id, `${t.name} — ${(t.artists || [])[0] ? t.artists[0].name : ''}`.replace(/ — $/, ''), 'Música · Spotify', pickImg(t.album && t.album.images));
-    if (a) add(a.id, `${a.name} — ${(a.artists || [])[0] ? a.artists[0].name : ''}`.replace(/ — $/, ''), 'Álbum · Spotify', pickImg(a.images));
-    if (r) add(r.id, r.name, 'Artista · Spotify', pickImg(r.images));
+    if (t) add(t.id, `${t.name} — ${(t.artists || [])[0] ? t.artists[0].name : ''}`.replace(/ — $/, ''), 'Música · Spotify', pickImg(t.album && t.album.images), 'track');
+    if (a) add(a.id, `${a.name} — ${(a.artists || [])[0] ? a.artists[0].name : ''}`.replace(/ — $/, ''), 'Álbum · Spotify', pickImg(a.images), 'album');
+    if (r) add(r.id, r.name, 'Artista · Spotify', pickImg(r.images), 'artist');
   }
   return out;
 }
@@ -69,7 +72,7 @@ async function itunes(q) {
   const n = Math.max((songs.results || []).length, (albums.results || []).length);
   for (let i = 0; i < n; i++) {
     const s = (songs.results || [])[i], a = (albums.results || [])[i];
-    if (s && s.artworkUrl100) out.push(item('itunes:' + s.trackId, `${s.trackName} — ${s.artistName}`, 'Música · Apple', ref(big(s.artworkUrl100))));
+    if (s && s.artworkUrl100) out.push(item('itunes:' + s.trackId, `${s.trackName} — ${s.artistName}`, 'Música · Apple', ref(big(s.artworkUrl100)), s.previewUrl ? 'it:' + s.previewUrl : ''));
     if (a && a.artworkUrl100) out.push(item('itunes:' + a.collectionId, `${a.collectionName} — ${a.artistName}`, 'Álbum · Apple', ref(big(a.artworkUrl100))));
   }
   return out;
@@ -138,4 +141,4 @@ function coverUrls(r) {
 }
 const validRef = (r) => typeof r === 'string' && r.length <= 520 && !!coverUrls(r);
 
-module.exports = { search, available, coverUrls, validRef, hasSpotify };
+module.exports = { search, available, coverUrls, validRef, validPlay, hasSpotify };
