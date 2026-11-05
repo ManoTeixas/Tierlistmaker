@@ -1,169 +1,228 @@
-// Fontes de busca por categoria. Cada uma devolve itens { id, name, sub, r, thumb }:
-//   r = referência da imagem, entregue pelo endpoint /cover (o servidor busca e entrega; nada é guardado aqui).
-// Chaves e endereços vêm de variáveis de ambiente (os endereços só mudam nos testes).
-const UA = 'escalacao-games/1.0 (projeto pessoal)';
-const URLS = {
-  steam: process.env.STEAM_URL || 'https://store.steampowered.com/api/storesearch/',
-  spotifyToken: process.env.SPOTIFY_TOKEN_URL || 'https://accounts.spotify.com/api/token',
-  spotify: process.env.SPOTIFY_API_URL || 'https://api.spotify.com/v1/search',
-  itunes: process.env.ITUNES_URL || 'https://itunes.apple.com/search',
-  tvmaze: process.env.TVMAZE_URL || 'https://api.tvmaze.com/search/shows',
-  tmdb: process.env.TMDB_URL || 'https://api.themoviedb.org/3/search/',
-  jikan: process.env.JIKAN_URL || 'https://api.jikan.moe/v4/anime',
-  openlibrary: process.env.OPENLIBRARY_URL || 'https://openlibrary.org/search.json',
-  anilist: process.env.ANILIST_URL || 'https://graphql.anilist.co',
-};
-const SPOTIFY_ID = process.env.SPOTIFY_CLIENT_ID || '', SPOTIFY_SECRET = process.env.SPOTIFY_CLIENT_SECRET || '';
-const TMDB_KEY = process.env.TMDB_API_KEY || '';
-const hasSpotify = !!(SPOTIFY_ID && SPOTIFY_SECRET);
+// Servidor sem dependências (Node 18+).  Uso:  node server.js
+// Serve o site da pasta /public, contas e comunidade (auth.js, community.js)
+// e faz a busca de imagens livres (Openverse e Wikimedia Commons).
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const auth = require('./auth');
+const community = require('./community');
+const sources = require('./sources');
 
-async function getJson(url, opts) {
-  let r;
-  try { r = await fetch(url, Object.assign({ headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: AbortSignal.timeout(9000) }, opts)); }
-  catch (e) { console.error('busca falhou', new URL(url).host, e.message, e.cause && (e.cause.code || e.cause.message)); throw new Error('não foi possível conectar a ' + new URL(url).host + (e.cause && e.cause.code ? ' (' + e.cause.code + ')' : '') + '.'); }
-  if (!r.ok) throw new Error('O serviço de busca respondeu ' + r.status + '.');
+const PORT = Number(process.env.PORT) || 3000;
+const PUBLIC = path.join(__dirname, 'public');
+
+const MIME = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.ico': 'image/x-icon',
+};
+
+
+function sendJson(res, code, body) {
+  res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+const OPENVERSE = process.env.OPENVERSE_URL || 'https://api.openverse.org/v1/images/';
+const COMMONS = process.env.COMMONS_URL || 'https://commons.wikimedia.org/w/api.php';
+const TRANSLATE = process.env.TRANSLATE_URL || 'https://api.mymemory.translated.net/get';
+const TTL = 10 * 60 * 1000;
+const jsonCache = new Map(); // chave -> { t, data }
+async function cachedJson(key, load) {
+  const hit = jsonCache.get(key);
+  if (hit && Date.now() - hit.t < TTL) return hit.data;
+  const data = await load();
+  jsonCache.set(key, { t: Date.now(), data });
+  if (jsonCache.size > 300) jsonCache.delete(jsonCache.keys().next().value);
+  return data;
+}
+const IMG_UA = 'escalacao-games/1.0 (projeto pessoal; busca de imagens livres)';
+// O proxy de imagens só fala com estes domínios (evita que o servidor seja usado para acessar qualquer endereço).
+const ALLOWED_HOSTS = ['openverse.org', 'wikimedia.org', 'steamstatic.com', 'scdn.co', 'tmdb.org', 'mzstatic.com', 'myanimelist.net', 'anilist.co', 'tvmaze.com', 'openlibrary.org', 'archive.org', ...(process.env.ALLOW_HOSTS || '').split(',').filter(Boolean)];
+const hostOk = (h) => ALLOWED_HOSTS.some((a) => h === a || h.endsWith('.' + a));
+const proxied = (u) => '/imgproxy?u=' + encodeURIComponent(u);
+const MAX_IMG = 6 * 1024 * 1024;
+
+async function plainJson(url) {
+  const r = await fetch(url, { headers: { 'User-Agent': IMG_UA, Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
+  if (!r.ok) throw new Error('Serviço de imagens respondeu ' + r.status);
   return r.json();
 }
-const ref = (u) => 'u:' + u;
-const item = (id, name, sub, r, p) => Object.assign({ id, name: String(name).slice(0, 80), sub: sub ? String(sub).slice(0, 60) : '', r, thumb: '/cover?r=' + encodeURIComponent(r) }, p ? { p } : {});
-// p = como ouvir: 'sp:track:ID' (player do Spotify) ou 'it:https://…' (prévia de 30 s da Apple)
-const PLAY = /^(sp:(track|album|artist):[A-Za-z0-9]{10,32}|it:https:\/\/[a-z0-9.-]+\.(itunes\.apple\.com|mzstatic\.com)\/[\w\-./%~+=]{1,300})$/;
-const validPlay = (p) => typeof p === 'string' && p.length <= 400 && PLAY.test(p);
-const year = (d) => (d ? String(d).slice(0, 4) : '');
 
-// ----- Steam (sem chave)
-async function steam(q) {
-  const d = await getJson(URLS.steam + '?' + new URLSearchParams({ term: q, l: 'portuguese', cc: 'BR' }));
-  return (d.items || []).filter((i) => i.type === 'app' && /^\d{1,10}$/.test(String(i.id))).slice(0, 20).map((i) => item('steam:' + i.id, i.name, 'Steam', 'steam:' + i.id));
+// A maioria dos bancos entende melhor inglês: traduz "comida" para "food" (se o serviço gratuito responder).
+async function toEnglish(term) {
+  try {
+    const d = await cachedJson('tr:' + term.toLowerCase(), async () => {
+      const qs = new URLSearchParams({ q: term, langpair: 'pt|en' });
+      const r = await fetch(TRANSLATE + '?' + qs, { headers: { 'User-Agent': IMG_UA }, signal: AbortSignal.timeout(3500) });
+      return r.ok ? r.json() : {};
+    });
+    const t = String((d.responseData && d.responseData.translatedText) || '').trim().toLowerCase();
+    return t && t.length <= 80 && t !== term.toLowerCase() && Number(d.responseStatus) === 200 ? t : null;
+  } catch (_) {
+    return null;
+  }
 }
 
-// ----- Spotify (exige SPOTIFY_CLIENT_ID e SPOTIFY_CLIENT_SECRET)
-let spTok = { v: '', exp: 0 };
-async function spotifyToken() {
-  if (spTok.v && Date.now() < spTok.exp) return spTok.v;
-  const d = await getJson(URLS.spotifyToken, {
-    method: 'POST',
-    headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded', Authorization: 'Basic ' + Buffer.from(SPOTIFY_ID + ':' + SPOTIFY_SECRET).toString('base64') },
-    body: 'grant_type=client_credentials',
+async function openverse(q) {
+  const qs = new URLSearchParams({ q, page_size: '20', mature: 'false' });
+  const d = await plainJson(OPENVERSE + '?' + qs);
+  return (d.results || [])
+    .map((r) => ({
+      id: 'ov:' + r.id,
+      name: String(r.title || q).slice(0, 60),
+      thumb: r.thumbnail || '',
+      author: r.creator || '',
+      license: [r.license, r.license_version].filter(Boolean).join(' ').toUpperCase(),
+      page: r.foreign_landing_url || '',
+    }))
+    .filter((i) => {
+      try { return i.thumb && hostOk(new URL(i.thumb).hostname); } catch (_) { return false; }
+    });
+}
+
+async function commons(q) {
+  const qs = new URLSearchParams({
+    action: 'query', generator: 'search', gsrsearch: q + ' filetype:bitmap', gsrnamespace: '6', gsrlimit: '20',
+    prop: 'imageinfo', iiprop: 'url|extmetadata', iiurlwidth: '360', format: 'json', formatversion: '2',
   });
-  spTok = { v: d.access_token, exp: Date.now() + Math.max(60, (d.expires_in || 3600) - 60) * 1000 };
-  return spTok.v;
+  const d = await plainJson(COMMONS + '?' + qs);
+  const pages = ((d.query && d.query.pages) || []).sort((a, b) => (a.index || 0) - (b.index || 0));
+  return pages
+    .map((p) => {
+      const ii = (p.imageinfo || [])[0] || {};
+      const meta = ii.extmetadata || {};
+      const strip = (v) => String((v && v.value) || '').replace(/<[^>]*>/g, '').trim();
+      return {
+        id: 'wc:' + p.pageid,
+        name: String(p.title || q).replace(/^File:/, '').replace(/\.[^.]+$/, '').replace(/_/g, ' ').slice(0, 60),
+        thumb: ii.thumburl || '',
+        author: strip(meta.Artist).slice(0, 60),
+        license: strip(meta.LicenseShortName),
+        page: ii.descriptionurl || '',
+      };
+    })
+    .filter((i) => {
+      try { return i.thumb && hostOk(new URL(i.thumb).hostname); } catch (_) { return false; }
+    });
 }
-const pickImg = (imgs) => { const a = (imgs || []).filter((i) => i && i.url); return a.length ? (a.find((i) => i.width && i.width <= 400) || a[a.length - 1]).url : ''; };
-async function spotify(q) {
-  const tok = await spotifyToken();
-  // desde fev/2026 o limite máximo por busca é 10; pedimos poucos de cada tipo
-  const d = await getJson(URLS.spotify + '?' + new URLSearchParams({ q, type: 'track,album,artist', limit: '5', market: 'BR' }), { headers: { 'User-Agent': UA, Authorization: 'Bearer ' + tok } });
-  const out = [];
-  const add = (id, name, sub, img, type) => { if (img) out.push(item('spotify:' + id, name, sub, ref(img), `sp:${type}:${id}`)); };
-  const L = (k) => (d[k] && d[k].items) || [];
-  const n = Math.max(L('tracks').length, L('albums').length, L('artists').length);
-  for (let i = 0; i < n; i++) {   // intercala os três tipos
-    const t = L('tracks')[i], a = L('albums')[i], r = L('artists')[i];
-    if (t) add(t.id, `${t.name} — ${(t.artists || [])[0] ? t.artists[0].name : ''}`.replace(/ — $/, ''), 'Música · Spotify', pickImg(t.album && t.album.images), 'track');
-    if (a) add(a.id, `${a.name} — ${(a.artists || [])[0] ? a.artists[0].name : ''}`.replace(/ — $/, ''), 'Álbum · Spotify', pickImg(a.images), 'album');
-    if (r) add(r.id, r.name, 'Artista · Spotify', pickImg(r.images), 'artist');
+
+function interleave(lists) {
+  const out = [], seen = new Set();
+  for (let i = 0; out.length < 30; i++) {
+    let any = false;
+    for (const l of lists) {
+      if (i < l.length) {
+        any = true;
+        if (!seen.has(l[i].id)) { seen.add(l[i].id); out.push(l[i]); }
+      }
+    }
+    if (!any) break;
   }
   return out;
 }
 
-// ----- iTunes (sem chave): alternativa para músicas quando o Spotify não está configurado
-async function itunes(q) {
-  const call = (entity) => getJson(URLS.itunes + '?' + new URLSearchParams({ term: q, media: 'music', entity, limit: '10', country: 'BR' }));
-  const [songs, albums] = await Promise.all([call('song'), call('album')]);
-  const big = (u) => String(u || '').replace(/\/\d+x\d+bb\./, '/600x600bb.');
-  const out = [];
-  const n = Math.max((songs.results || []).length, (albums.results || []).length);
-  for (let i = 0; i < n; i++) {
-    const s = (songs.results || [])[i], a = (albums.results || [])[i];
-    if (s && s.artworkUrl100) out.push(item('itunes:' + s.trackId, `${s.trackName} — ${s.artistName}`, 'Música · Apple', ref(big(s.artworkUrl100)), s.previewUrl ? 'it:' + s.previewUrl : ''));
-    if (a && a.artworkUrl100) out.push(item('itunes:' + a.collectionId, `${a.collectionName} — ${a.artistName}`, 'Álbum · Apple', ref(big(a.artworkUrl100))));
-  }
-  return out;
-}
-
-// ----- Alternativas sem chave: filmes pela Apple (iTunes) e séries pelo TVMaze
-async function itunesMovies(q) {
-  const d = await getJson(URLS.itunes + '?' + new URLSearchParams({ term: q, media: 'movie', entity: 'movie', limit: '15', country: 'BR' }));
-  return (d.results || []).filter((m) => m.artworkUrl100 && m.trackName).map((m) =>
-    item('itunes:' + m.trackId, m.releaseDate ? `${m.trackName} (${String(m.releaseDate).slice(0, 4)})` : m.trackName, 'Filme · Apple', ref(String(m.artworkUrl100).replace(/\/\d+x\d+bb\./, '/600x900bb.'))));
-}
-async function tvmaze(q) {
-  const d = await getJson(URLS.tvmaze + '?' + new URLSearchParams({ q }));
-  return (Array.isArray(d) ? d : []).map((x) => x.show).filter((s) => s && s.image && (s.image.original || s.image.medium)).slice(0, 15).map((s) =>
-    item('tvmaze:' + s.id, s.premiered ? `${s.name} (${String(s.premiered).slice(0, 4)})` : s.name, 'Série · TVMaze', ref(s.image.original || s.image.medium)));
-}
-
-// ----- TMDB (filmes e séries; exige TMDB_API_KEY, gratuita)
-async function tmdb(kind, q) {
-  const params = new URLSearchParams({ query: q, language: 'pt-BR', include_adult: 'false' });
-  const opts = {};
-  if (TMDB_KEY.length > 60) opts.headers = { 'User-Agent': UA, Accept: 'application/json', Authorization: 'Bearer ' + TMDB_KEY };   // token v4
-  else params.set('api_key', TMDB_KEY);
-  const d = await getJson(URLS.tmdb + kind + '?' + params, opts);
-  return (d.results || []).filter((m) => m.poster_path).slice(0, 20).map((m) => {
-    const y = year(m.release_date || m.first_air_date), name = m.title || m.name;
-    return item('tmdb:' + kind + m.id, y ? `${name} (${y})` : name, kind === 'tv' ? 'Série · TMDB' : 'Filme · TMDB', ref('https://image.tmdb.org/t/p/w342' + m.poster_path));
+function searchImages(term) {
+  return cachedJson('img:' + term.toLowerCase(), async () => {
+    const en = await toEnglish(term);
+    const terms = en ? [en, term] : [term];
+    let failures = 0, calls = 0;
+    const run = async (fn) => { calls++; try { return await fn(); } catch (_) { failures++; return []; } };
+    let items = interleave(await Promise.all(terms.map((t) => run(() => openverse(t)))));
+    if (items.length < 8) items = items.concat(interleave(await Promise.all(terms.map((t) => run(() => commons(t))))));
+    if (!items.length && failures === calls) throw new Error('Os serviços de imagens não responderam.');
+    return items.slice(0, 30).map((i) => ({ ...i, thumb: proxied(i.thumb) }));
   });
 }
 
-// ----- Animes (Jikan, dados do MyAnimeList; sem chave)
-async function jikan(q) {
-  try { const out = await jikanOnly(q); if (out.length) return out; } catch (e) { console.error('jikan:', e.message); }
-  return anilist(q);   // se o Jikan estiver fora do ar ou bloqueado, usa o AniList
-}
-async function anilist(q) {
-  const query = 'query($s:String){Page(perPage:15){media(search:$s,type:ANIME,isAdult:false,sort:SEARCH_MATCH){id title{romaji english} seasonYear coverImage{large}}}}';
-  const d = await getJson(URLS.anilist, { method: 'POST', headers: { 'User-Agent': UA, 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ query, variables: { s: q } }) });
-  return ((d.data && d.data.Page && d.data.Page.media) || []).filter((m) => m.coverImage && m.coverImage.large).map((m) =>
-    item('anilist:' + m.id, m.title.english || m.title.romaji, m.seasonYear ? 'Anime · ' + m.seasonYear : 'Anime', ref(m.coverImage.large)));
-}
-async function jikanOnly(q) {
-  const d = await getJson(URLS.jikan + '?' + new URLSearchParams({ q, limit: '15', sfw: 'true' }));
-  return (d.data || []).map((a) => ({ a, img: a.images && a.images.jpg && (a.images.jpg.large_image_url || a.images.jpg.image_url) }))
-    .filter((x) => x.img).map(({ a, img }) => item('jikan:' + a.mal_id, a.title_english || a.title, a.year ? 'Anime · ' + a.year : 'Anime', ref(img)));
-}
-
-// ----- Livros (Open Library; sem chave)
-async function openlibrary(q) {
-  const d = await getJson(URLS.openlibrary + '?' + new URLSearchParams({ q, limit: '15', fields: 'key,title,author_name,cover_i,first_publish_year' }));
-  return (d.docs || []).filter((b) => b.cover_i && /^\d+$/.test(String(b.cover_i))).map((b) =>
-    item('ol:' + String(b.key).replace(/\W/g, ''), b.title, [b.author_name && b.author_name[0], b.first_publish_year].filter(Boolean).join(' · '), ref(`https://covers.openlibrary.org/b/id/${b.cover_i}-L.jpg`)));
-}
-
-const NEEDS = {
-  spotify: 'A busca no Spotify ainda não foi configurada neste site (faltam SPOTIFY_CLIENT_ID e SPOTIFY_CLIENT_SECRET).',
-  tmdb_movie: 'A busca de filmes ainda não foi configurada neste site (falta TMDB_API_KEY).',
-  tmdb_tv: 'A busca de séries ainda não foi configurada neste site (falta TMDB_API_KEY).',
-};
-// "music" usa o Spotify quando há credenciais e, sem elas, o iTunes.
-const PROVIDERS = {
-  steam, music: (q) => (hasSpotify ? spotify(q) : itunes(q)), tmdb_movie: (q) => (TMDB_KEY ? tmdb('movie', q).catch(() => itunesMovies(q)) : itunesMovies(q)), tmdb_tv: (q) => (TMDB_KEY ? tmdb('tv', q).catch(() => tvmaze(q)) : tvmaze(q)), jikan, openlibrary,
-};
-const available = () => ({ steam: true, music: true, tmdb_movie: true, tmdb_tv: true, tmdb: !!TMDB_KEY, jikan: true, openlibrary: true, spotify: hasSpotify });
-
-const cache = new Map();
-async function search(source, q) {
-  const fn = PROVIDERS[source];
-  if (!fn) throw Object.assign(new Error('Fonte desconhecida.'), { code: 400 });
-  const key = source + '|' + q.toLowerCase(), hit = cache.get(key);
-  if (hit && Date.now() - hit.t < 10 * 60 * 1000) return hit.items;
-  const items = await fn(q);
-  cache.set(key, { t: Date.now(), items });
-  if (cache.size > 300) cache.delete(cache.keys().next().value);
-  return items;
-}
-
-// URLs de imagem de cada referência de capa: "steam:ID" tenta a vertical e cai para a horizontal; "u:URL" é um endereço permitido.
-function coverUrls(r) {
-  let m;
-  if ((m = /^steam:(\d{1,10})$/.exec(r))) {
-    const cf = `https://cdn.cloudflare.steamstatic.com/steam/apps/${m[1]}`, ff = `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${m[1]}`;
-    return [`${cf}/library_600x900.jpg`, `${ff}/library_600x900.jpg`, `${cf}/header.jpg`, `${ff}/header.jpg`, `${cf}/capsule_231x87.jpg`];
+async function fetchImageSafe(raw) {
+  let url = new URL(raw);
+  for (let hop = 0; hop < 4; hop++) {
+    if (url.protocol !== 'https:' && !(process.env.ALLOW_HTTP === '1' && url.protocol === 'http:')) throw new Error('endereço não permitido');
+    if (!hostOk(url.hostname)) throw new Error('endereço não permitido');
+    const r = await fetch(url, { redirect: 'manual', headers: { 'User-Agent': IMG_UA }, signal: AbortSignal.timeout(10000) });
+    if (r.status >= 300 && r.status < 400 && r.headers.get('location')) { url = new URL(r.headers.get('location'), url); continue; }
+    if (!r.ok) throw new Error('a imagem respondeu ' + r.status);
+    const type = (r.headers.get('content-type') || '').split(';')[0].trim();
+    if (!/^image\/(jpeg|png|webp|gif)$/.test(type)) throw new Error('tipo de arquivo não permitido');
+    if ((Number(r.headers.get('content-length')) || 0) > MAX_IMG) throw new Error('imagem grande demais');
+    const buf = Buffer.from(await r.arrayBuffer());
+    if (buf.length > MAX_IMG) throw new Error('imagem grande demais');
+    return { buf, type };
   }
-  if (/^u:https?:\/\/[^\s]{1,500}$/.test(r)) return [r.slice(2)];
-  return null;
+  throw new Error('redirecionamentos demais');
 }
-const validRef = (r) => typeof r === 'string' && r.length <= 520 && !!coverUrls(r);
+const proxyCache = new Map();
+async function getProxied(raw) {
+  if (proxyCache.has(raw)) return proxyCache.get(raw);
+  const item = await fetchImageSafe(raw);
+  proxyCache.set(raw, item);
+  if (proxyCache.size > 150) proxyCache.delete(proxyCache.keys().next().value);
+  return item;
+}
 
-module.exports = { search, available, coverUrls, validRef, validPlay, hasSpotify };
+function serveStatic(res, pathname) {
+  const rel = pathname === '/' ? '/index.html' : pathname;
+  const file = path.normalize(path.join(PUBLIC, rel));
+  if (!file.startsWith(PUBLIC + path.sep)) {
+    res.writeHead(403).end('Proibido');
+    return;
+  }
+  fs.readFile(file, (err, buf) => {
+    if (err) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Não encontrado');
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream' });
+    res.end(buf);
+  });
+}
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, 'http://localhost');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'same-origin');
+  res.setHeader('X-Frame-Options', 'DENY');
+  try {
+    if (url.pathname === '/healthz') return sendJson(res, 200, { ok: true });
+    if (await auth.handle(req, res, url)) return;
+    if (await community.handle(req, res, url)) return;
+    if (url.pathname === '/api/sources') return sendJson(res, 200, { available: sources.available() });
+    if (url.pathname === '/api/search') {
+      const q = (url.searchParams.get('q') || '').trim().slice(0, 80), source = url.searchParams.get('source') || '';
+      if (q.length < 2) return sendJson(res, 400, { error: 'Digite pelo menos 2 letras.' });
+      if (source === 'web') return sendJson(res, 200, { items: await searchImages(q) });
+      try { return sendJson(res, 200, { items: await sources.search(source, q) }); }
+      catch (e) { return sendJson(res, e.code || 502, { error: e.code ? e.message : 'Não consegui falar com o serviço de busca agora. ' + e.message }); }
+    }
+    if (url.pathname === '/cover') {   // capa de uma fonte: o servidor busca (só em endereços permitidos) e entrega
+      const urls = sources.coverUrls(url.searchParams.get('r') || '');
+      if (!urls) return sendJson(res, 400, { error: 'Referência inválida.' });
+      for (const u of urls) {
+        try { const img = await getProxied(u); res.writeHead(200, { 'Content-Type': img.type, 'Cache-Control': 'public, max-age=86400' }); return res.end(img.buf); } catch (_) { /* tenta a próxima */ }
+      }
+      return sendJson(res, 404, { error: 'Sem imagem.' });
+    }
+    if (url.pathname === '/api/images') {
+      const q = (url.searchParams.get('q') || '').trim().slice(0, 80);
+      if (q.length < 2) return sendJson(res, 400, { error: 'Digite pelo menos 2 letras.' });
+      return sendJson(res, 200, { items: await searchImages(q) });
+    }
+    if (url.pathname === '/imgproxy') {
+      let img;
+      try { img = await getProxied(url.searchParams.get('u') || ''); } catch (e) { return sendJson(res, 400, { error: 'Imagem indisponível: ' + e.message }); }
+      res.writeHead(200, { 'Content-Type': img.type, 'Cache-Control': 'public, max-age=86400' });
+      return res.end(img.buf);
+    }
+    return serveStatic(res, decodeURIComponent(url.pathname));
+  } catch (e) {
+    return sendJson(res, 502, { error: 'Não consegui falar com o serviço agora. ' + e.message });
+  }
+});
+
+server.listen(PORT, () => {
+  console.log(`Escalação rodando em http://localhost:${PORT}  (dados em ${auth.DATA_DIR})`);
+});

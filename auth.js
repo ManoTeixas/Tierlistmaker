@@ -11,7 +11,7 @@ const BLOBS = path.join(DATA_DIR, 'blobs');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const SESSION_MS = 30 * 24 * 3600 * 1000;
 const MAX_BODY = 12 * 1024 * 1024;   // listas + fotos de um usuário
-const MODES = ['jogos', 'futebol', 'tier'];
+const MODES = ['jogos', 'futebol', 'tier', 'bracket'];
 const TRUST_PROXY = process.env.TRUST_PROXY === '1';
 
 fs.mkdirSync(BLOBS, { recursive: true });
