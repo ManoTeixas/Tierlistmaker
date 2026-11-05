@@ -1210,8 +1210,8 @@ const curCat = () => catOf(S.cur ? S.cur.cat : S.catId);
 const SRC = {
   steam: { name: () => "Steam (jogos)", ph: "Buscar jogo na Steam", hint: "Capas e nomes da Steam. As imagens pertencem aos respectivos donos." },
   music: { name: () => (AV.spotify ? "Spotify (músicas, álbuns, artistas)" : "Apple (músicas e álbuns)"), ph: "Buscar música, álbum ou artista", hint: () => (AV.spotify ? "Dados e capas do Spotify. As imagens pertencem aos respectivos donos." : "Dados e capas da Apple (iTunes). As imagens pertencem aos respectivos donos.") },
-  tmdb_movie: { name: () => "Filmes (TMDB)", ph: "Buscar filme", hint: "Esta aplicação usa a API do TMDB, mas não é endossada nem certificada por ele." },
-  tmdb_tv: { name: () => "Séries (TMDB)", ph: "Buscar série", hint: "Esta aplicação usa a API do TMDB, mas não é endossada nem certificada por ele." },
+  tmdb_movie: { name: () => (AV.tmdb ? "Filmes (TMDB)" : "Filmes (Apple)"), ph: "Buscar filme", hint: () => (AV.tmdb ? "Esta aplicação usa a API do TMDB, mas não é endossada nem certificada por ele." : "Dados e pôsteres da Apple (iTunes). As imagens pertencem aos respectivos donos.") },
+  tmdb_tv: { name: () => (AV.tmdb ? "Séries (TMDB)" : "Séries (TVMaze)"), ph: "Buscar série", hint: () => (AV.tmdb ? "Esta aplicação usa a API do TMDB, mas não é endossada nem certificada por ele." : "Dados e pôsteres do TVMaze. As imagens pertencem aos respectivos donos.") },
   jikan: { name: () => "Animes (MyAnimeList)", ph: "Buscar anime", hint: "Dados do MyAnimeList, pela API Jikan. As imagens pertencem aos respectivos donos." },
   openlibrary: { name: () => "Livros (Open Library)", ph: "Buscar livro ou autor", hint: "Capas e dados da Open Library." },
   web: { name: () => "Imagens da web", ph: "Buscar imagens (ex.: comida)", hint: "Imagens de bancos livres (Openverse e Wikimedia Commons). Passe o mouse para ver o nome; autor e licença ficam salvos em Fotos quando você usa a imagem." },
