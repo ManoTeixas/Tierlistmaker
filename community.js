@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const auth = require('./auth');
+const sources = require('./sources');
 
 const INDEX = path.join(auth.DATA_DIR, 'community.json');
 const POSTS = path.join(auth.DATA_DIR, 'posts');
@@ -44,6 +45,7 @@ function cleanTier(data, lib) {
       }
       return { id, name, x: 1 };   // foto sem arquivo válido vira item de texto
     }
+    if (g.r !== undefined) return sources.validRef(g.r) ? { id, name, r: g.r } : { id, name, x: 1 };   // capa de uma fonte (Steam, filmes…)
     const out = { id, name, x: 1 };
     if (typeof g.c === 'string' && HEX.test(g.c)) out.c = g.c;
     return out;
@@ -59,7 +61,20 @@ function cleanTier(data, lib) {
   return { data: { title, names: !!data.names, pool, tiers }, photos, total };
 }
 
-const meta = (m, uid) => ({ id: m.id, title: m.title, author: m.author, created: m.created, updated: m.updated, n: m.n, tiers: m.tiers, sample: m.sample, mine: !!uid && m.uid === uid });
+const fold = (v) => String(v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+const catOf = (m) => m.category || 'Outros';
+// Se já existe uma categoria com o mesmo nome (sem diferenciar maiúsculas e acentos), reaproveita a grafia dela.
+function canonCategory(name) {
+  const f = fold(name);
+  for (const m of Object.values(index.posts)) if (fold(catOf(m)) === f) return catOf(m);
+  return name;
+}
+function categories(uid) {
+  const n = new Map();
+  for (const m of Object.values(index.posts)) if (!m.hidden || m.uid === uid) n.set(catOf(m), (n.get(catOf(m)) || 0) + 1);
+  return [...n].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'pt'));
+}
+const meta = (m, uid) => ({ id: m.id, title: m.title, author: m.author, category: catOf(m), created: m.created, updated: m.updated, n: m.n, tiers: m.tiers, sample: m.sample, mine: !!uid && m.uid === uid });
 
 async function handle(req, res, url) {
   const p = url.pathname;
@@ -75,7 +90,7 @@ async function handle(req, res, url) {
         .filter((m) => !m.hidden || m.uid === uid)
         .sort((a, b) => b.updated - a.updated).slice(0, 100)
         .map((m) => meta(m, uid));
-      return send(res, 200, { posts: list }), true;
+      return send(res, 200, { posts: list, categories: categories(uid) }), true;
     }
 
     if (parts.length === 2 && req.method === 'POST') {
@@ -84,6 +99,8 @@ async function handle(req, res, url) {
       const b = await auth.readJson(req, MAX_BODY);
       const author = str(b.author, 24);
       if (author.length < 2) return send(res, 400, { error: 'Escolha um nome de 2 a 24 letras para aparecer na comunidade.' }), true;
+      const category = canonCategory(str(b.category, 30).replace(/\s+/g, ' '));
+      if (category.length < 2) return send(res, 400, { error: 'Escolha a categoria da tierlist (ex.: Filmes, Animes, Comida) ou crie uma nova.' }), true;
       const pid = str(b.pid, 64);
       if (!pid) return send(res, 400, { error: 'Lista inválida.' }), true;
       const { data, photos, total } = cleanTier(b.data, b.lib);
@@ -94,7 +111,7 @@ async function handle(req, res, url) {
         index.posts[m.id] = m;
       }
       const names = data.tiers.flatMap((t) => t.items).concat(data.pool).map((g) => g.name);
-      Object.assign(m, { title: data.title, author, updated: Date.now(), n: total, sample: names.slice(0, 6), tiers: data.tiers.map((t) => ({ name: t.name, color: t.color })) });
+      Object.assign(m, { title: data.title, author, category, updated: Date.now(), n: total, sample: names.slice(0, 6), tiers: data.tiers.map((t) => ({ name: t.name, color: t.color })) });
       await auth.writeAtomic(postFile(m.id), JSON.stringify({ data, photos }));
       await saveIndex();
       return send(res, 200, { id: m.id }), true;

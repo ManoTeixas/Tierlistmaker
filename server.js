@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const auth = require('./auth');
 const community = require('./community');
+const sources = require('./sources');
 
 const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC = path.join(__dirname, 'public');
@@ -40,7 +41,7 @@ async function cachedJson(key, load) {
 }
 const IMG_UA = 'escalacao-games/1.0 (projeto pessoal; busca de imagens livres)';
 // O proxy de imagens só fala com estes domínios (evita que o servidor seja usado para acessar qualquer endereço).
-const ALLOWED_HOSTS = ['openverse.org', 'wikimedia.org', ...(process.env.ALLOW_HOSTS || '').split(',').filter(Boolean)];
+const ALLOWED_HOSTS = ['openverse.org', 'wikimedia.org', 'steamstatic.com', 'scdn.co', 'tmdb.org', 'mzstatic.com', 'myanimelist.net', 'openlibrary.org', 'archive.org', ...(process.env.ALLOW_HOSTS || '').split(',').filter(Boolean)];
 const hostOk = (h) => ALLOWED_HOSTS.some((a) => h === a || h.endsWith('.' + a));
 const proxied = (u) => '/imgproxy?u=' + encodeURIComponent(u);
 const MAX_IMG = 6 * 1024 * 1024;
@@ -189,6 +190,22 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/healthz') return sendJson(res, 200, { ok: true });
     if (await auth.handle(req, res, url)) return;
     if (await community.handle(req, res, url)) return;
+    if (url.pathname === '/api/sources') return sendJson(res, 200, { available: sources.available() });
+    if (url.pathname === '/api/search') {
+      const q = (url.searchParams.get('q') || '').trim().slice(0, 80), source = url.searchParams.get('source') || '';
+      if (q.length < 2) return sendJson(res, 400, { error: 'Digite pelo menos 2 letras.' });
+      if (source === 'web') return sendJson(res, 200, { items: await searchImages(q) });
+      try { return sendJson(res, 200, { items: await sources.search(source, q) }); }
+      catch (e) { return sendJson(res, e.code || 502, { error: e.code ? e.message : 'Não consegui falar com o serviço de busca agora. ' + e.message }); }
+    }
+    if (url.pathname === '/cover') {   // capa de uma fonte: o servidor busca (só em endereços permitidos) e entrega
+      const urls = sources.coverUrls(url.searchParams.get('r') || '');
+      if (!urls) return sendJson(res, 400, { error: 'Referência inválida.' });
+      for (const u of urls) {
+        try { const img = await getProxied(u); res.writeHead(200, { 'Content-Type': img.type, 'Cache-Control': 'public, max-age=86400' }); return res.end(img.buf); } catch (_) { /* tenta a próxima */ }
+      }
+      return sendJson(res, 404, { error: 'Sem imagem.' });
+    }
     if (url.pathname === '/api/images') {
       const q = (url.searchParams.get('q') || '').trim().slice(0, 80);
       if (q.length < 2) return sendJson(res, 400, { error: 'Digite pelo menos 2 letras.' });

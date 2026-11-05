@@ -18,7 +18,7 @@ O servidor serve o site, guarda as contas e a comunidade e faz a ponte com os ba
 
 ## Tela inicial
 
-- **Escalação de futebol:** campo com posições; use fotos ou elementos de texto.
+- **Escalação:** escolha um tema. Futebol (posições), Jogos, Filmes, Séries, Animes, Músicas, Livros e Comida vêm com prêmios nas vagas (melhor roteiro, melhor trilha sonora…), mais um "destaque" e 7 menções honrosas; "Livre" traz só Vaga 1, 2, 3… Dá para trocar o conjunto de nomes no editor ("Nomes das vagas") e renomear qualquer vaga clicando nela. Use fotos, imagens ou elementos de texto.
 - **Tierlist:** escolha um modelo pronto ou comece do zero.
 - **Comunidade:** tierlists publicadas por outras pessoas.
 - **Minhas listas:** tudo o que você salvou. Abra, duplique ou exclua.
@@ -42,7 +42,7 @@ Com conta (**Criar conta** / **Entrar**, por e-mail e senha), as listas e as fot
 
 ## Comunidade
 
-Com a conta ativa, abra uma tierlist e clique em **Publicar na comunidade**: ela aparece, com as fotos, na aba Comunidade, com o nome que você escolher (o e-mail nunca aparece). Publicar de novo a mesma lista atualiza a publicação. Na Comunidade, **Usar como modelo** abre uma cópia sua, **Retirar** tira a sua publicação e **Denunciar** esconde uma tierlist depois de 3 denúncias de pessoas diferentes. Limites: 30 publicações por conta, 300 itens e cerca de 3,5 MB de fotos por tierlist. Defina `ADMIN_EMAIL` no servidor para que esse e-mail possa retirar qualquer publicação.
+Com a conta ativa, abra uma tierlist e clique em **Publicar na comunidade**: o site pede a **categoria** da tierlist (escolha uma que já existe ou crie uma nova; nomes iguais, mesmo com maiúsculas ou acentos diferentes, viram a mesma categoria) e o nome que vai aparecer. A tierlist então aparece, com as fotos, na aba Comunidade, que tem filtro por categoria (o e-mail nunca aparece). Publicar de novo a mesma lista atualiza a publicação. Na Comunidade, **Usar como modelo** abre uma cópia sua, **Retirar** tira a sua publicação e **Denunciar** esconde uma tierlist depois de 3 denúncias de pessoas diferentes. Limites: 30 publicações por conta, 300 itens e cerca de 3,5 MB de fotos por tierlist. Defina `ADMIN_EMAIL` no servidor para que esse e-mail possa retirar qualquer publicação.
 
 ## Como usar o editor
 
@@ -77,3 +77,22 @@ O projeto inclui um `Dockerfile` (volume em `/data`) e responde em `/healthz` pa
 4. Publique e abra o endereço HTTPS que a hospedagem gerar. Confira o custo do disco persistente no plano escolhido.
 
 Backup: copie a pasta `DATA_DIR` de vez em quando. Este armazenamento em arquivos serve bem para um site pequeno; com muitos usuários, o próximo passo é um banco de dados.
+
+## Categorias e buscas específicas
+
+Tudo (tierlists e escalações) é organizado por categoria: Jogos, Músicas, Filmes, Séries, Animes, Livros, Futebol, Comida e Outros.
+Cada categoria tem seus modelos e sua própria fonte de busca na aba **Buscar** do editor (sempre com "Imagens da web" como alternativa):
+
+| Categoria | Fonte | Precisa de chave? |
+|---|---|---|
+| Jogos | Steam | não |
+| Músicas | Spotify (ou Apple/iTunes se o Spotify não estiver configurado) | Spotify: sim |
+| Filmes e Séries | TMDB | sim (`TMDB_API_KEY`, gratuita) |
+| Animes | MyAnimeList (Jikan) | não |
+| Livros | Open Library | não |
+
+Variáveis de ambiente (no Render: Environment):
+- `SPOTIFY_CLIENT_ID` e `SPOTIFY_CLIENT_SECRET`: credenciais do seu app em developer.spotify.com. Em modo de desenvolvimento a conta precisa ser Premium; a busca devolve no máximo 10 itens por tipo.
+- `TMDB_API_KEY`: chave gratuita em themoviedb.org. O site exibe o aviso de atribuição exigido pelo TMDB.
+
+Observações: capas pertencem aos respectivos donos. Os termos do Spotify pedem atribuição e proíbem cortar as capas, o que conflita com os blocos cortados e com a exportação em PNG; use por sua conta e risco. Itens de fontes guardam só a referência da capa (o servidor busca na hora), não a imagem.

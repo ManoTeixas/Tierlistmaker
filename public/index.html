@@ -169,7 +169,12 @@
 
   /* Telas: início, modelos e editor */
   body:not([data-view="edit"]) .top, body:not([data-view="edit"]) .app { display: none; }
-  body[data-view="edit"] .home, body:not([data-view="home"]) #home, body:not([data-view="templates"]) #templates, body:not([data-view="community"]) #community { display: none; }
+  body[data-view="edit"] .home, body:not([data-view="home"]) #home, body:not([data-view="category"]) #category, body:not([data-view="community"]) #community { display: none; }
+  .cgrid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+  .mcard .art .big { font-family: var(--font-d); font-weight: 700; font-size: 64px; color: rgba(255,255,255,.9); }
+  .fsec h2 { margin: 0 0 12px; }
+  .fsec + .fsec { margin-top: 28px; }
+  .src { width: 100%; min-height: 38px; padding: 6px 10px; background: var(--ink); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font-size: 14px; }
   .pcard .by { color: var(--mute); }
   .pcard .smp { font-size: 12px; color: var(--mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pcard .pbtns .warn { color: #ff9b8a; }
@@ -179,6 +184,9 @@
   #pubForm h2 { margin: 0; font-family: var(--font-d); font-size: 28px; text-transform: uppercase; letter-spacing: .03em; }
   #pubForm p { margin: 0; font-size: 13px; color: var(--mute); line-height: 1.4; }
   #pubForm label { display: grid; gap: 4px; font-size: 13px; color: var(--mute); }
+  #pubForm select { min-height: 40px; padding: 6px 10px; background: var(--ink); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font-size: 15px; }
+  .catbar { display: flex; flex-wrap: wrap; gap: 8px; }
+  .catbar .chip.on { border-color: var(--gold); color: var(--gold); }
   #pubForm input { min-height: 40px; padding: 6px 10px; background: var(--ink); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font-size: 15px; }
   #pubForm input:focus { outline: none; border-color: var(--gold); }
   .home { max-width: 1100px; margin: 0 auto; padding: 8px 0 40px; display: grid; gap: 28px; }
@@ -270,24 +278,21 @@
     <span class="mark" aria-hidden="true"></span>
     <div>
       <h1>Escalação</h1>
-      <p>Monte escalações de futebol e tierlists com suas fotos, imagens da web ou só texto. Crie uma conta para guardar suas listas e acessá-las de qualquer aparelho.</p>
+      <p>Monte escalações (de futebol, filmes, jogos, músicas…) e tierlists com suas fotos, imagens da web ou só texto. Crie uma conta para guardar suas listas e acessá-las de qualquer aparelho.</p>
     </div>
     <div class="acct" id="acct"></div>
   </div>
 
   <div>
-    <h2>Criar</h2>
-    <div class="mcards">
-      <button class="mcard" type="button" data-new="futebol">
-        <div class="art"><svg viewBox="0 0 160 110" aria-hidden="true"><rect x="30" y="4" width="100" height="102" rx="8" fill="#2a7450"/><g fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.5"><rect x="38" y="10" width="84" height="90"/><line x1="38" y1="55" x2="122" y2="55"/><circle cx="80" cy="55" r="12"/></g><g fill="#e8edf7" stroke="#f4b942" stroke-width="1.5"><circle cx="56" cy="24" r="6"/><circle cx="80" cy="20" r="6"/><circle cx="104" cy="24" r="6"/><circle cx="60" cy="48" r="6"/><circle cx="80" cy="52" r="6"/><circle cx="100" cy="48" r="6"/><circle cx="48" cy="74" r="6"/><circle cx="68" cy="78" r="6"/><circle cx="92" cy="78" r="6"/><circle cx="112" cy="74" r="6"/><circle cx="80" cy="94" r="6"/></g></svg></div>
-        <div class="body"><h3>Escalação de futebol</h3><p>Escale seu time com as fotos dos jogadores. Escolha a formação, mova cada um pelo campo e defina técnico e reservas.</p><span class="go">Começar →</span></div>
-      </button>
-      <button class="mcard" type="button" data-go="templates">
-        <div class="art"><svg viewBox="0 0 160 110" aria-hidden="true"><g><rect x="14" y="8" width="26" height="22" fill="#ff7f7f"/><rect x="40" y="8" width="106" height="22" fill="#1b2438"/><rect x="14" y="32" width="26" height="22" fill="#ffbf7f"/><rect x="40" y="32" width="106" height="22" fill="#1b2438"/><rect x="14" y="56" width="26" height="22" fill="#ffdf7f"/><rect x="40" y="56" width="106" height="22" fill="#1b2438"/><rect x="14" y="80" width="26" height="22" fill="#bfff7f"/><rect x="40" y="80" width="106" height="22" fill="#1b2438"/></g><g fill="#5a2e7a"><rect x="46" y="11" width="16" height="16"/><rect x="66" y="11" width="16" height="16"/></g><g fill="#2e5a7a"><rect x="46" y="35" width="16" height="16"/></g><g fill="#7a6a2e"><rect x="46" y="59" width="16" height="16"/><rect x="66" y="59" width="16" height="16"/><rect x="86" y="59" width="16" height="16"/></g><g fill="#2e7a5a"><rect x="46" y="83" width="16" height="16"/></g></svg></div>
-        <div class="body"><h3>Tierlist</h3><p>Classifique filmes, comida, jogos ou o que quiser em tiers. Comece por um modelo pronto ou do zero.</p><span class="go">Escolher modelo →</span></div>
-      </button>
+    <h2>Escolha uma categoria</h2>
+    <div class="mcards cgrid" id="catGrid"></div>
+  </div>
+
+  <div>
+    <h2>Explorar</h2>
+    <div class="mcards cgrid">
       <button class="mcard" type="button" data-go="community">
-        <div class="art"><svg viewBox="0 0 160 110" aria-hidden="true"><g fill="none" stroke="#f4b942" stroke-width="2"><circle cx="80" cy="36" r="12" fill="#2e5a7a"/><path d="M58 84c0-14 10-24 22-24s22 10 22 24"/><circle cx="38" cy="46" r="9" fill="#5a2e7a"/><path d="M22 86c0-11 7-19 16-19 5 0 8 2 11 5"/><circle cx="122" cy="46" r="9" fill="#2e7a5a"/><path d="M138 86c0-11-7-19-16-19-5 0-8 2-11 5"/></g></svg></div>
+        <div class="art" style="background:linear-gradient(135deg,#2e5a7a,#5a2e7a)"><span class="big">★</span></div>
         <div class="body"><h3>Comunidade</h3><p>Veja tierlists publicadas por outras pessoas, use como modelo e publique as suas.</p><span class="go">Ver tierlists →</span></div>
       </button>
     </div>
@@ -295,22 +300,63 @@
 
   <div>
     <h2>Minhas listas</h2>
+    <div class="catbar" id="myCats" role="group" aria-label="Filtrar por categoria"></div>
     <div class="saved" id="savedList"></div>
   </div>
 </section>
 
-<!-- Modelos de tierlist -->
-<section class="home" id="templates" aria-label="Modelos de tierlist">
+<!-- Categoria: formatos e modelos -->
+<section class="home" id="category" aria-label="Categoria">
   <button class="btn back" type="button" data-go="home">← Início</button>
   <div class="hhead">
     <span class="mark" aria-hidden="true"></span>
     <div>
-      <h1>Tierlist</h1>
-      <p>Escolha um modelo pronto, com os itens já na lista para você classificar, ou comece do zero.</p>
+      <h1 id="catTitle"></h1>
+      <p id="catDesc"></p>
     </div>
   </div>
-  <div class="tgrid" id="tplGrid"></div>
+  <div id="catFormats"></div>
 </section>
+
+<!-- Comunidade -->
+<section class="home" id="community" aria-label="Comunidade">
+  <button class="btn back" type="button" data-go="home">← Início</button>
+  <div class="hhead">
+    <span class="mark" aria-hidden="true"></span>
+    <div>
+      <h1>Comunidade</h1>
+      <p>Tierlists publicadas por quem usa o site. Use qualquer uma como modelo e faça a sua versão. Para publicar a sua, entre na conta e clique em “Publicar na comunidade” dentro da tierlist.</p>
+    </div>
+  </div>
+  <div class="catbar" id="comCats" role="group" aria-label="Filtrar por categoria"></div>
+  <div class="saved" id="comList"></div>
+</section>
+
+<dialog id="pubDlg" aria-labelledby="pubTitle">
+  <form id="pubForm" novalidate>
+    <h2 id="pubTitle">Publicar na comunidade</h2>
+    <p>A tierlist, com as fotos, fica visível para todo mundo que abrir a Comunidade. Seu e-mail não aparece. Publicar de novo a mesma lista atualiza a publicação.</p>
+    <label>Categoria
+      <select id="pubCat"></select>
+    </label>
+    <label id="lblNewCat" class="hide">Nome da nova categoria<input id="pubNewCat" maxlength="30" placeholder="Ex.: Filmes, Animes, Comida"></label>
+    <label>Nome que vai aparecer<input id="pubName" maxlength="24" autocomplete="nickname" placeholder="Ex.: Lucas"></label>
+    <p class="aerr" id="pubErr" role="alert"></p>
+    <div class="abtn"><button class="btn" type="button" id="pubCancel">Cancelar</button><button class="btn primary" type="submit" id="pubOk">Publicar</button></div>
+  </form>
+</dialog>
+
+<dialog id="authDlg" aria-labelledby="authTitle">
+  <form id="authForm" novalidate>
+    <h2 id="authTitle"></h2>
+    <label id="lblEmail">E-mail<input id="authEmail" type="email" autocomplete="email" maxlength="254"></label>
+    <label>Senha<input id="authPass" type="password" maxlength="200"></label>
+    <label id="lblPass2">Repetir a senha<input id="authPass2" type="password" maxlength="200" autocomplete="new-password"></label>
+    <p class="aerr" id="authErr" role="alert"></p>
+    <div class="abtn"><button class="btn" type="button" id="authCancel">Cancelar</button><button class="btn primary" type="submit" id="authOk"></button></div>
+    <p class="aswitch"><button class="alink" type="button" id="authSwitch"></button></p>
+  </form>
+</dialog>
 
 <header class="top">
   <div class="brand">
@@ -336,45 +382,10 @@
   </div>
 </header>
 
-<!-- Comunidade -->
-<section class="home" id="community" aria-label="Comunidade">
-  <button class="btn back" type="button" data-go="home">← Início</button>
-  <div class="hhead">
-    <span class="mark" aria-hidden="true"></span>
-    <div>
-      <h1>Comunidade</h1>
-      <p>Tierlists publicadas por quem usa o site. Use qualquer uma como modelo e faça a sua versão. Para publicar a sua, entre na conta e clique em “Publicar na comunidade” dentro da tierlist.</p>
-    </div>
-  </div>
-  <div class="saved" id="comList"></div>
-</section>
-
-<dialog id="pubDlg" aria-labelledby="pubTitle">
-  <form id="pubForm" novalidate>
-    <h2 id="pubTitle">Publicar na comunidade</h2>
-    <p>A tierlist, com as fotos, fica visível para todo mundo que abrir a Comunidade. Seu e-mail não aparece. Publicar de novo a mesma lista atualiza a publicação.</p>
-    <label>Nome que vai aparecer<input id="pubName" maxlength="24" autocomplete="nickname" placeholder="Ex.: Lucas"></label>
-    <p class="aerr" id="pubErr" role="alert"></p>
-    <div class="abtn"><button class="btn" type="button" id="pubCancel">Cancelar</button><button class="btn primary" type="submit" id="pubOk">Publicar</button></div>
-  </form>
-</dialog>
-
-<dialog id="authDlg" aria-labelledby="authTitle">
-  <form id="authForm" novalidate>
-    <h2 id="authTitle"></h2>
-    <label id="lblEmail">E-mail<input id="authEmail" type="email" autocomplete="email" maxlength="254"></label>
-    <label>Senha<input id="authPass" type="password" maxlength="200"></label>
-    <label id="lblPass2">Repetir a senha<input id="authPass2" type="password" maxlength="200" autocomplete="new-password"></label>
-    <p class="aerr" id="authErr" role="alert"></p>
-    <div class="abtn"><button class="btn" type="button" id="authCancel">Cancelar</button><button class="btn primary" type="submit" id="authOk"></button></div>
-    <p class="aswitch"><button class="alink" type="button" id="authSwitch"></button></p>
-  </form>
-</dialog>
-
 <main class="app" id="app" data-mode="futebol">
   <aside class="bench" aria-label="Técnico e reservas">
-    <section><h2>Técnico</h2><div class="list" id="coach"></div></section>
-    <section><h2>Reservas</h2><div class="list" id="reserves"></div></section>
+    <section><h2 id="coachHead">Técnico</h2><div class="list" id="coach"></div></section>
+    <section><h2 id="benchHead">Reservas</h2><div class="list" id="reserves"></div></section>
   </aside>
 
   <section class="stage">
@@ -400,7 +411,7 @@
   <aside class="search" id="searchPanel" aria-label="Fotos e imagens">
     <div class="tabs" role="tablist">
       <button type="button" role="tab" id="tabFotos" data-tab="fotos">Fotos</button>
-      <button type="button" role="tab" id="tabImgs" data-tab="imgs">Imagens</button>
+      <button type="button" role="tab" id="tabImgs" data-tab="imgs">Buscar</button>
     </div>
     <div class="target" id="target"></div>
     <form class="textadd slottext" id="slotText" autocomplete="off">
@@ -419,6 +430,7 @@
       <ul class="results" id="lib"></ul>
     </div>
     <div class="pane hide" id="paneImgs">
+      <select class="src" id="srcSel" aria-label="Onde buscar"></select>
       <div class="field">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input id="qi" type="search" placeholder="Buscar imagens (ex.: comida)" autocomplete="off" aria-label="O que procurar">
@@ -426,7 +438,7 @@
       <div class="chips" id="chips"></div>
       <div class="status" id="status3" role="status" aria-live="polite"></div>
       <div class="igrid" id="imgGrid"></div>
-      <p class="hint">Imagens de bancos livres (Openverse e Wikimedia Commons). Passe o mouse para ver o nome; autor e licença ficam salvos em Fotos quando você usa a imagem.</p>
+      <p class="hint" id="srcHint"></p>
     </div>
     <p class="hint" id="hint"></p>
   </aside>
@@ -456,11 +468,35 @@ const ROLE_LABELS = {
   ATA: { 1: ["Centroavante"], 2: ["Atacante", "Atacante"], 3: ["Ponta E", "Centroavante", "Ponta D"] },
 };
 const CATS = ["Favorito do gênero", "Melhor enredo", "Melhor direção de arte", "Superestimado", "Subestimado", "Melhor sequência de ação", "Melhor trilha sonora", "Elenco favorito", "Antigo e muito bom", "Todo mundo devia jogar", "Melhor combate"];
+// Conjuntos de nomes das vagas. "themed": temas fora do futebol, com destaque e menções honrosas no lugar de técnico e reservas.
+const theme = (name, title, labels, coach, bench) => ({ name, title, themed: true, field: (s) => labels[s.i] || `Vaga ${s.i + 1}`, coach, bench,
+  coachHead: "Destaque", benchHead: "Menções honrosas" });
 const TEMPLATES = {
-  categorias: { name: "Categorias de jogo", field: (s) => CATS[s.i] || `Jogador ${s.i + 1}` },
-  posicoes: { name: "Posições de futebol", field: (s) => s.pos },
-  numeros: { name: "Jogador 1, 2, 3…", field: (s) => `Jogador ${s.i + 1}` },
+  posicoes: { name: "Futebol: posições", title: "Minha escalação de futebol", field: (s) => s.pos, coach: "Técnico", bench: "Reserva", coachHead: "Técnico", benchHead: "Reservas", formation: "f433" },
+  categorias: Object.assign(theme("Jogos: categorias", "Meus jogos favoritos", CATS, "Jogo da vida", "Menção honrosa"), { formation: "cat" }),
+  filmes: Object.assign(theme("Filmes: premiações", "Meus filmes favoritos", ["Melhor roteiro", "Melhor direção", "Melhor fotografia", "Melhor trilha sonora", "Melhor atuação", "Melhor vilão", "Melhor final", "Melhor cena de ação", "Melhor comédia", "Mais subestimado", "Mais superestimado"], "Filme da vida", "Menção honrosa"), { formation: "cat" }),
+  series: Object.assign(theme("Séries: premiações", "Minhas séries favoritas", ["Melhor roteiro", "Melhor temporada", "Melhor protagonista", "Melhor vilão", "Melhor abertura", "Melhor trilha sonora", "Melhor final", "Melhor plot twist", "Mais viciante", "Mais subestimada", "Mais superestimada"], "Série da vida", "Menção honrosa"), { formation: "cat" }),
+  animes: Object.assign(theme("Animes: premiações", "Meus animes favoritos", ["Melhor história", "Melhor protagonista", "Melhor vilão", "Melhor luta", "Melhor abertura", "Melhor trilha sonora", "Melhor animação", "Melhor final", "Melhor personagem secundário", "Mais emocionante", "Mais subestimado"], "Anime da vida", "Menção honrosa"), { formation: "cat" }),
+  musicas: Object.assign(theme("Músicas: premiações", "Minhas músicas favoritas", ["Melhor letra", "Melhor refrão", "Melhor solo", "Melhor batida", "Melhor álbum", "Melhor clipe", "Para treinar", "Para chorar", "Para festa", "Mais subestimada", "Mais superestimada"], "Música da vida", "Menção honrosa"), { formation: "cat" }),
+  livros: Object.assign(theme("Livros: premiações", "Meus livros favoritos", ["Melhor enredo", "Melhor personagem", "Melhor vilão", "Melhor começo", "Melhor final", "Melhor plot twist", "Mais emocionante", "Mais triste", "Leitura leve", "Mais subestimado", "Mais superestimado"], "Livro da vida", "Menção honrosa"), { formation: "cat" }),
+  comida: Object.assign(theme("Comida: premiações", "Minhas comidas favoritas", ["Melhor entrada", "Melhor prato principal", "Melhor sobremesa", "Melhor lanche", "Melhor pizza", "Melhor doce", "Melhor comida de rua", "Melhor café da manhã", "Melhor de madrugada", "Mais subestimada", "Mais superestimada"], "Prato da vida", "Menção honrosa"), { formation: "cat" }),
+  livre: Object.assign(theme("Livre: Vaga 1, 2, 3…", "Minha escalação", [], "Destaque", "Reserva"), { formation: "cat" }),
+  numeros: { name: "Jogador 1, 2, 3…", title: "Minha escalação", field: (s) => `Jogador ${s.i + 1}`, coach: "Técnico", bench: "Reserva", coachHead: "Técnico", benchHead: "Reservas", formation: "f433" },
 };
+// Categorias: organizam tudo (tierlists, escalações e qualquer formato novo). "sources": de onde vêm os itens na aba Buscar.
+const CATEGORIES = [
+  { id: "jogos", name: "Jogos", hue: 150, desc: "Tierlists e escalações de jogos. Busca de jogos na Steam.", sources: ["steam", "web"], tiers: ["jogos"], lineups: ["categorias"] },
+  { id: "musica", name: "Músicas", hue: 280, desc: "Músicas, álbuns e artistas, com busca de capas.", sources: ["music", "web"], tiers: ["musica"], lineups: ["musicas"] },
+  { id: "filmes", name: "Filmes", hue: 8, desc: "Rankings de filmes, com busca de pôsteres.", sources: ["tmdb_movie", "web"], tiers: ["filmes"], lineups: ["filmes"] },
+  { id: "series", name: "Séries", hue: 200, desc: "Rankings de séries, com busca de pôsteres.", sources: ["tmdb_tv", "web"], tiers: ["series"], lineups: ["series"] },
+  { id: "animes", name: "Animes", hue: 330, desc: "Rankings de animes, com busca de capas.", sources: ["jikan", "web"], tiers: ["animes"], lineups: ["animes"] },
+  { id: "livros", name: "Livros", hue: 38, desc: "Rankings de livros, com busca de capas.", sources: ["openlibrary", "web"], tiers: ["livros"], lineups: ["livros"] },
+  { id: "futebol", name: "Futebol", hue: 130, desc: "Escalações de futebol e rankings de jogadores. Fotos pela busca de imagens ou enviadas por você.", sources: ["web"], tiers: ["craques"], lineups: ["posicoes"] },
+  { id: "comida", name: "Comida", hue: 22, desc: "Rankings e prêmios de comida.", sources: ["web"], tiers: ["comida"], lineups: ["comida"] },
+  { id: "outros", name: "Outros", hue: 220, desc: "Qualquer outro assunto: comece de um modelo ou do zero.", sources: ["web"], tiers: ["herois"], lineups: [] },
+];
+const LINEUP_CAT = { posicoes: "futebol", numeros: "futebol", categorias: "jogos", filmes: "filmes", series: "series", animes: "animes", musicas: "musica", livros: "livros", comida: "comida", livre: "outros" };
+const LINEUP_ORDER = ["posicoes", "categorias", "filmes", "series", "animes", "musicas", "livros", "comida", "livre"];
 const KEYS = [...Array.from({ length: 11 }, (_, i) => "f" + i), "c", ...Array.from({ length: 7 }, (_, i) => "b" + i)];
 const isField = (k) => k[0] === "f";
 const MODES = ["futebol", "tier"];
@@ -495,8 +531,8 @@ const newTid = () => "t" + Date.now().toString(36) + tidN++;
 const defPitch = (formation, template, title) => ({ title, formation, template, slots: {}, labels: {}, pos: {}, pool: [] });
 const defTier = (title) => ({ title: title || "Minha tierlist", names: false, pool: [], tiers: ["S", "A", "B", "C", "D"].map((n, i) => ({ id: newTid(), name: n, color: TIER_COLORS[i], items: [] })) });
 const uidn = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-const MODE_NAME = { futebol: "Escalação de futebol", tier: "Tierlist" };
-const newData = (mode) => mode === "tier" ? defTier() : defPitch("f433", "posicoes", "Minha escalação de futebol");
+const MODE_NAME = { futebol: "Escalação", tier: "Tierlist" };
+const newData = (mode) => mode === "tier" ? defTier() : defPitch("f433", "posicoes", TEMPLATES.posicoes.title);
 // Completa listas salvas por versões antigas e descarta dados inválidos.
 function normData(mode, d) {
   const base = newData(mode);
@@ -512,17 +548,18 @@ function fixProj(p) {
   if (!MODES.includes(mode)) return null;
   const d = normData(mode, p.data);
   if (old || mode === "futebol") {
-    const asText = (g) => (g && !g.u && !g.x ? { id: "x" + uidn(), name: g.name || "Item", x: 1 } : g);
+    const asText = (g) => (g && !g.u && !g.x && !g.r ? (/^\d{1,10}$/.test(String(g.id)) ? { id: "steam:" + g.id, name: g.name || "Jogo", r: "steam:" + g.id } : { id: "x" + uidn(), name: g.name || "Item", x: 1 }) : g);
     for (const k of Object.keys(d.slots)) d.slots[k] = asText(d.slots[k]);
     d.pool = (d.pool || []).map(asText);
   }
-  return { id: p.id || "p" + uidn(), mode, updated: p.updated || Date.now(), data: d };
+  const cat = CATEGORIES.some((k) => k.id === p.cat) ? p.cat : mode === "tier" ? "outros" : (LINEUP_CAT[d.template] || "outros");
+  return { id: p.id || "p" + uidn(), mode, cat, updated: p.updated || Date.now(), data: d };
 }
 const hasContent = (mode, d) => (mode === "tier" ? d.pool.length > 0 || d.tiers.some((t) => t.items.length) : Object.keys(d.slots).length > 0 || d.pool.length > 0);
 
 const KEY = "escalacao-v3", V2 = "escalacao-v2", V1 = "escalacao-games-v1", LIBKEY = "escalacao-lib-v1";
 // view: home | templates | edit.  cur = lista aberta no editor (só entra em projects ao ser salva).
-let S = { view: "home", tab: "fotos", mode: "futebol", projects: [], cur: null };
+let S = { view: "home", tab: "fotos", mode: "futebol", projects: [], cur: null, catId: "outros", src: null };
 let LIB = {};   // fotos enviadas: id -> { id, name, src }
 try {
   const v3 = JSON.parse(localStorage.getItem(KEY) || "null");
@@ -563,10 +600,11 @@ let sel = null;        // vaga marcada (modos de campo)
 let tierSel = null;    // tier marcado (tierlist)
 let LABELS = {}, DEFAULTS = {}, LAY = {};
 
-// Tipos de item: foto {u:1} ou texto {x:1, c?: cor}
-const clean = (g) => (g.u ? { id: g.id, name: g.name, u: 1 } : g.x ? (g.ico || g.c ? Object.assign({ id: g.id, name: g.name, x: 1 }, g.ico ? { ico: g.ico } : {}, g.c ? { c: g.c } : {}) : { id: g.id, name: g.name, x: 1 }) : { id: g.id, name: g.name });
+// Tipos de item: foto enviada {u:1}, capa de uma fonte de busca {r:"steam:123"}, ou texto {x:1, c?: cor}
+const clean = (g) => (g.u ? { id: g.id, name: g.name, u: 1 } : g.r ? { id: g.id, name: g.name, r: g.r } : g.x ? (g.ico || g.c ? Object.assign({ id: g.id, name: g.name, x: 1 }, g.ico ? { ico: g.ico } : {}, g.c ? { c: g.c } : {}) : { id: g.id, name: g.name, x: 1 }) : { id: g.id, name: g.name });
 function srcOf(g, kind) {
   if (g.x) return "";
+  if (g.r) return "/cover?r=" + encodeURIComponent(g.r);   // capa de uma fonte (Steam, filmes…): o servidor entrega
   return g.u && LIB[g.id] ? LIB[g.id].src : "";
 }
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -587,7 +625,7 @@ function eachItem(fn) {
 }
 const usedCount = (id) => { let n = 0; eachItem((g) => { if (g.id === id) n++; }); return n; };
 
-function benchDefault(key) { return key === "c" ? "Técnico" : `Reserva ${Number(key.slice(1)) + 1}`; }
+function benchDefault(key) { const t = TEMPLATES[M().template]; return key === "c" ? t.coach : `${t.bench} ${Number(key.slice(1)) + 1}`; }
 function labelFor(key) { const o = M().labels[M().template]; return (o && o[key]) || DEFAULTS[key]; }
 const emptyKeys = () => KEYS.filter((k) => !M().slots[k]);
 function nextEmpty(after) {
@@ -665,17 +703,19 @@ function renderChrome() {
   $("#modeChip").textContent = MODE_NAME[S.mode];
   setSaveState(S.projects.includes(S.cur) ? savedText() : "Ainda não salvo", false);
   $("#title").value = M().title;
+  if (!isTier()) { const t = TEMPLATES[M().template]; $("#coachHead").textContent = t.coachHead; $("#benchHead").textContent = t.benchHead; }
   $("#ctlPitch").classList.toggle("hide", isTier());
   $("#ctlTier").classList.toggle("hide", !isTier());
   if (isTier()) $("#showNames").checked = !!M().names;
   else { $("#formation").value = M().formation; $("#template").value = M().template; }
   const tab = S.tab === "imgs" ? "imgs" : "fotos";
+  fillSrc();
   for (const [t, name] of [["fotos", "Fotos"], ["imgs", "Imgs"]]) {
     $("#tab" + name).setAttribute("aria-selected", t === tab);
     $("#pane" + name).classList.toggle("hide", t !== tab);
   }
   $("#hint").textContent = S.mode === "futebol"
-    ? "Adicione fotos, imagens ou texto: sem vaga marcada, o item fica em “Sem posição” e você o arrasta até a vaga. Arraste o jogador no campo para posicioná-lo."
+    ? "Adicione fotos, imagens ou texto: sem vaga marcada, o item fica em “Sem posição” e você o arrasta até a vaga. Arraste um item no campo para posicioná-lo. Clique no nome de uma vaga para renomear."
     : "Clique em um item para colocá-lo no tier marcado (ou em “Sem tier”), ou arraste até um tier. Arraste um item para cá para remover.";
 }
 
@@ -751,6 +791,14 @@ const TPLS = [
   { id: "herois", name: "Super-heróis", title: "Tierlist de super-heróis", tiers: ["Lendário", "Ótimo", "Bom", "Ok", "Fraco"],
     items: ["Homem-Aranha", "Batman", "Superman", "Homem de Ferro", "Capitão América", "Thor", "Hulk", "Mulher-Maravilha", "Pantera Negra", "Doutor Estranho", "Deadpool", "Wolverine", "Flash", "Aquaman", "Viúva Negra", "Homem-Formiga", "Capitã Marvel", "Lanterna Verde", "Ciborgue", "Groot"] },
 ];
+const TPL_CAT = { filmes: "filmes", series: "series", animes: "animes", jogos: "jogos", comida: "comida", musica: "musica", herois: "outros", livros: "livros", craques: "futebol" };
+TPLS.push(
+  { id: "livros", name: "Livros", title: "Tierlist de livros", tiers: ["Obra-prima", "Ótimo", "Bom", "Ok", "Abandonei"],
+    items: ["Dom Casmurro", "O Pequeno Príncipe", "1984", "Harry Potter e a Pedra Filosofal", "O Senhor dos Anéis", "A Culpa é das Estrelas", "Orgulho e Preconceito", "O Hobbit", "Cem Anos de Solidão", "O Alquimista", "Capitães da Areia", "A Revolução dos Bichos", "O Código Da Vinci", "Percy Jackson e o Ladrão de Raios", "Jogos Vorazes", "Crepúsculo", "It: A Coisa", "O Diário de Anne Frank", "Memórias Póstumas de Brás Cubas", "A Guerra dos Tronos"] },
+  { id: "craques", name: "Jogadores de futebol", title: "Tierlist de jogadores", tiers: ["Lenda", "Craque", "Bom", "Regular", "Perna de pau"],
+    items: ["Pelé", "Maradona", "Messi", "Cristiano Ronaldo", "Neymar", "Ronaldo Fenômeno", "Ronaldinho Gaúcho", "Zidane", "Cruyff", "Beckenbauer", "Romário", "Cafu", "Roberto Carlos", "Kaká", "Mbappé", "Haaland", "Modrić", "Iniesta", "Xavi", "Zico"] },
+);
+TPLS.forEach((t) => { t.cat = TPL_CAT[t.id] || "outros"; });
 function tierFromTpl(t) {
   const d = defTier(t.title);
   d.tiers.forEach((tr, i) => { if (t.tiers[i]) tr.name = t.tiers[i]; });
@@ -761,52 +809,87 @@ function renderView() {
   document.body.dataset.view = S.view;
   window.scrollTo(0, 0);
   if (S.view === "home") renderHome();
-  else if (S.view === "templates") renderTemplates();
+  else if (S.view === "category") renderCategory();
   else if (S.view === "community") renderCommunity();
   else renderAll();
 }
-function goView(v) {
+function goView(v, catId) {
   if (v === "edit" && !S.cur) v = "home";
-  S.view = v; history.pushState({ v }, ""); renderView();
+  if (catId) S.catId = catId;
+  S.view = v; history.pushState({ v, c: S.catId }, ""); renderView();
 }
 window.addEventListener("popstate", (e) => {
   let v = (e.state && e.state.v) || "home";
   if (v === "edit" && !S.cur) v = "home";
+  if (e.state && e.state.c) S.catId = e.state.c;
   S.view = v; renderView();
 });
 function openCur(p) {
-  S.cur = p; S.mode = p.mode; sel = null; tierSel = null;
+  S.cur = p; S.mode = p.mode; S.catId = p.cat; sel = null; tierSel = null; S.src = null;
+  S.tab = catOf(p.cat).sources[0] !== "web" ? "imgs" : "fotos";   // categorias com busca própria abrem direto nela
   goView("edit");
 }
 function startNew(mode, tpl, ready) {
   const data = ready || (mode === "tier" && tpl ? tierFromTpl(tpl) : newData(mode));
-  openCur({ id: "p" + uidn(), mode, updated: Date.now(), data });
+  openCur({ id: "p" + uidn(), mode, cat: (tpl && tpl.cat) || S.catId, updated: Date.now(), data });
+}
+function startLineup(key) {
+  const t = TEMPLATES[key];
+  openCur({ id: "p" + uidn(), mode: "futebol", cat: S.catId, updated: Date.now(), data: defPitch(t.formation, key, t.title) });
 }
 function projInfo(p) {
   const d = p.data;
   if (p.mode === "tier") { const n = d.pool.length + d.tiers.reduce((s, t) => s + t.items.length, 0); return `${n} ${n === 1 ? "item" : "itens"} em ${d.tiers.length} tiers`; }
   return `${Object.keys(d.slots).length} de 19 vagas preenchidas${d.pool.length ? ` · ${d.pool.length} sem posição` : ""}`;
 }
+// Formatos de ranking. Para criar outro formato (bracket, top 10…), acrescente um item aqui:
+// "cards" devolve os modelos da categoria e os cliques em data-tpl / data-ltpl abrem o editor.
+const FORMATS = [
+  { id: "tier", name: "Tierlist",
+    cards: (k) => `<button class="tcard blank" type="button" data-tpl="">
+      <div class="tstrip">+</div>
+      <div class="body"><h3>Do zero</h3><span class="meta">Tiers S, A, B, C e D vazios</span><span class="sample">Adicione elementos com cor e texto, fotos ou itens da busca.</span></div></button>`
+      + k.tiers.map((id) => TPLS.find((t) => t.id === id)).filter(Boolean).map((t) => `<button class="tcard" type="button" data-tpl="${t.id}">
+      <div class="tstrip">${t.tiers.map((n, i) => `<span style="background:${TIER_COLORS[i]}">${esc(n[0].toUpperCase())}</span>`).join("")}</div>
+      <div class="body"><h3>${esc(t.name)}</h3><span class="meta">${t.items.length} itens · ${t.tiers.length} tiers</span><span class="sample">Tiers: ${esc(t.tiers.join(" › "))}</span><span class="sample">${esc(t.items.slice(0, 4).join(", "))}…</span></div></button>`).join("") },
+  { id: "lineup", name: "Escalação",
+    cards: (k) => [...new Set([...k.lineups, "livre"])].map((key) => {
+      const t = TEMPLATES[key], labs = layoutOf(t.formation).map((s) => t.field(s));
+      const strip = labs.slice(0, 6).map((n) => `<span style="background:hsl(${hueOf(t.name + n)},65%,72%)">${esc(n.replace(/^(Melhor|Mais|Para)\s+/i, "")[0].toUpperCase())}</span>`).join("");
+      return `<button class="tcard" type="button" data-ltpl="${key}">
+      <div class="tstrip">${strip}</div>
+      <div class="body"><h3>${esc(t.name)}</h3><span class="meta">11 vagas · ${esc(t.coachHead.toLowerCase())} e ${esc(t.benchHead.toLowerCase())}</span><span class="sample">${esc(labs.slice(0, 4).join(", "))}…</span></div></button>`;
+    }).join("") },
+];
+const catOf = (id) => CATEGORIES.find((k) => k.id === id) || CATEGORIES[CATEGORIES.length - 1];
+function renderCategory() {
+  const k = catOf(S.catId);
+  $("#catTitle").textContent = k.name;
+  $("#catDesc").textContent = k.desc;
+  $("#catFormats").innerHTML = FORMATS.map((f) => `<div class="fsec"><h2>${esc(f.name)}</h2><div class="tgrid">${f.cards(k)}</div></div>`).join("");
+}
+let myFilter = "";
 function renderHome() {
-  const list = [...S.projects].sort((a, b) => b.updated - a.updated);
+  $("#catGrid").innerHTML = CATEGORIES.map((k) => `<button class="mcard" type="button" data-go="category" data-cat="${k.id}">
+      <div class="art" style="background:linear-gradient(135deg,hsl(${k.hue},45%,30%),hsl(${(k.hue + 50) % 360},45%,20%))"><span class="big">${esc(k.name[0])}</span></div>
+      <div class="body"><h3>${esc(k.name)}</h3><p>${esc(k.desc)}</p><span class="go">Abrir →</span></div></button>`).join("");
+  const all = [...S.projects].sort((a, b) => b.updated - a.updated);
+  const used = CATEGORIES.filter((k) => all.some((p) => p.cat === k.id));
+  if (myFilter && !used.some((k) => k.id === myFilter)) myFilter = "";
+  $("#myCats").innerHTML = used.length > 1
+    ? [["", "Todas", all.length], ...used.map((k) => [k.id, k.name, all.filter((p) => p.cat === k.id).length])].map(([v, n, q]) => `<button type="button" class="chip${myFilter === v ? " on" : ""}" data-mycat="${v}">${esc(n)} (${q})</button>`).join("")
+    : "";
+  const list = myFilter ? all.filter((p) => p.cat === myFilter) : all;
   $("#savedList").innerHTML = list.length ? list.map((p) => {
     const strip = p.mode === "tier"
       ? `linear-gradient(90deg, ${p.data.tiers.map((t, i, a) => `${t.color} ${(i / a.length) * 100}% ${((i + 1) / a.length) * 100}%`).join(", ")})`
       : "repeating-linear-gradient(90deg, var(--pitch-a) 0 26px, var(--pitch-b) 26px 52px)";
     return `<article class="pcard" data-open="${p.id}" tabindex="0" role="button" aria-label="Abrir ${esc(p.data.title)}">
       <div class="pstrip" style="background:${strip}"></div>
-      <div class="pbody"><span class="badge">${MODE_NAME[p.mode]}</span><h3>${esc(p.data.title || "Sem nome")}</h3><p>${projInfo(p)}</p><small>Atualizada em ${new Date(p.updated).toLocaleDateString("pt-BR")}</small></div>
+      <div class="pbody"><span class="badge">${esc(catOf(p.cat).name)} · ${MODE_NAME[p.mode]}</span><h3>${esc(p.data.title || "Sem nome")}</h3><p>${projInfo(p)}</p><small>Atualizada em ${new Date(p.updated).toLocaleDateString("pt-BR")}</small></div>
       <div class="pbtns"><button class="btn" type="button" data-dup="${p.id}">Duplicar</button><button class="btn" type="button" data-delp="${p.id}">Excluir</button></div>
     </article>`;
-  }).join("") : '<p class="empty">Nenhuma lista salva ainda. Escolha um modo acima para começar; suas listas aparecem aqui automaticamente.</p>';
-}
-function renderTemplates() {
-  $("#tplGrid").innerHTML = `<button class="tcard blank" type="button" data-tpl="">
-      <div class="tstrip">+</div>
-      <div class="body"><h3>Do zero</h3><span class="meta">Tiers S, A, B, C e D vazios</span><span class="sample">Adicione elementos com cor e texto, fotos ou imagens da web.</span></div></button>`
-    + TPLS.map((t) => `<button class="tcard" type="button" data-tpl="${t.id}">
-      <div class="tstrip">${t.tiers.map((n, i) => `<span style="background:${TIER_COLORS[i]}">${esc(n[0].toUpperCase())}</span>`).join("")}</div>
-      <div class="body"><h3>${esc(t.name)}</h3><span class="meta">${t.items.length} itens · ${t.tiers.length} tiers</span><span class="sample">Tiers: ${esc(t.tiers.join(" › "))}</span><span class="sample">${esc(t.items.slice(0, 4).map((i) => (typeof i === "string" ? i : i.n)).join(", "))}…</span></div></button>`).join("");
+  }).join("") : '<p class="empty">Nenhuma lista salva ainda. Escolha uma categoria acima para começar; suas listas aparecem aqui automaticamente.</p>';
 }
 
 /* ---------- Busca (imagens da web) ---------- */
@@ -877,25 +960,44 @@ $("#btnAdd").addEventListener("click", () => $("#file").click());
 $("#file").addEventListener("change", async (e) => { const f = [...e.target.files]; e.target.value = ""; await ingest(f); });
 
 /* ---------- Imagens da web ---------- */
-let webItems = [], ictl = null, itimer = null;
+let webItems = [], ictl = null, itimer = null, AV = {};
 const CHIPS = ["comida", "animais", "carros", "praias", "futebol", "paisagens", "música", "arquitetura"];
 $("#chips").innerHTML = CHIPS.map((c) => `<button type="button" class="chip" data-chip="${c}">${c}</button>`).join("");
+const curCat = () => catOf(S.cur ? S.cur.cat : S.catId);
+const SRC = {
+  steam: { name: () => "Steam (jogos)", ph: "Buscar jogo na Steam", hint: "Capas e nomes da Steam. As imagens pertencem aos respectivos donos." },
+  music: { name: () => (AV.spotify ? "Spotify (músicas, álbuns, artistas)" : "Apple (músicas e álbuns)"), ph: "Buscar música, álbum ou artista", hint: () => (AV.spotify ? "Dados e capas do Spotify. As imagens pertencem aos respectivos donos." : "Dados e capas da Apple (iTunes). As imagens pertencem aos respectivos donos.") },
+  tmdb_movie: { name: () => "Filmes (TMDB)", ph: "Buscar filme", hint: "Esta aplicação usa a API do TMDB, mas não é endossada nem certificada por ele." },
+  tmdb_tv: { name: () => "Séries (TMDB)", ph: "Buscar série", hint: "Esta aplicação usa a API do TMDB, mas não é endossada nem certificada por ele." },
+  jikan: { name: () => "Animes (MyAnimeList)", ph: "Buscar anime", hint: "Dados do MyAnimeList, pela API Jikan. As imagens pertencem aos respectivos donos." },
+  openlibrary: { name: () => "Livros (Open Library)", ph: "Buscar livro ou autor", hint: "Capas e dados da Open Library." },
+  web: { name: () => "Imagens da web", ph: "Buscar imagens (ex.: comida)", hint: "Imagens de bancos livres (Openverse e Wikimedia Commons). Passe o mouse para ver o nome; autor e licença ficam salvos em Fotos quando você usa a imagem." },
+};
+const srcText = (id, k) => { const v = SRC[id][k]; return typeof v === "function" ? v() : v; };
+function fillSrc() {   // fontes da categoria da lista aberta
+  const list = curCat().sources, sel = $("#srcSel");
+  if (!S.src || !list.includes(S.src)) S.src = list[0];
+  sel.innerHTML = list.map((id) => `<option value="${id}">${esc(srcText(id, "name"))}${AV[id] === false ? " (não configurado)" : ""}</option>`).join("");
+  sel.value = S.src; sel.classList.toggle("hide", list.length < 2);
+  $("#qi").placeholder = srcText(S.src, "ph"); $("#srcHint").textContent = srcText(S.src, "hint");
+  $("#chips").classList.toggle("hide", S.src !== "web");
+}
 function renderWeb(items, heading) {
   webItems = items;
-  setStatus(items.length ? heading : "Nenhuma imagem encontrada. Tente outra palavra.", false, "imgs");
-  $("#imgGrid").innerHTML = items.map((w, i) => `<div class="igi" draggable="true" tabindex="0" role="button" data-i="${i}" title="${esc(w.name)}${w.author ? " · " + esc(w.author) : ""}${w.license ? " · " + esc(w.license) : ""}" aria-label="Usar ${esc(w.name)}">
+  setStatus(items.length ? heading : "Nada encontrado. Tente outras palavras.", false, "imgs");
+  $("#imgGrid").innerHTML = items.map((w, i) => `<div class="igi" draggable="true" tabindex="0" role="button" data-i="${i}" title="${esc(w.name)}${w.sub ? " · " + esc(w.sub) : ""}${w.author ? " · " + esc(w.author) : ""}${w.license ? " · " + esc(w.license) : ""}" aria-label="Usar ${esc(w.name)}">
       <img src="${esc(w.thumb)}" loading="lazy" alt="" draggable="false"><span class="t">${esc(w.name)}</span></div>`).join("");
 }
 async function runImgSearch(term) {
   if (ictl) ictl.abort();
   ictl = new AbortController();
-  setStatus("Buscando imagens…", false, "imgs");
+  setStatus("Buscando…", false, "imgs");
   try {
-    const r = await fetch("/api/images?q=" + encodeURIComponent(term), { signal: ictl.signal });
+    const r = await fetch("/api/search?source=" + encodeURIComponent(S.src) + "&q=" + encodeURIComponent(term), { signal: ictl.signal });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error || "Erro " + r.status);
-    renderWeb(j.items, `${j.items.length} imagens para “${term}”`);
-  } catch (e) { if (e.name !== "AbortError") setStatus(failMessage(e), true, "imgs"); }
+    renderWeb(j.items, `${j.items.length} resultado${j.items.length === 1 ? "" : "s"} para “${term}”`);
+  } catch (e) { if (e.name !== "AbortError") { webItems = []; $("#imgGrid").innerHTML = ""; setStatus(failMessage(e), true, "imgs"); } }
 }
 $("#qi").addEventListener("input", (e) => {
   clearTimeout(itimer);
@@ -903,8 +1005,14 @@ $("#qi").addEventListener("input", (e) => {
   if (v.length < 2) { if (ictl) ictl.abort(); webItems = []; $("#imgGrid").innerHTML = ""; setStatus("", false, "imgs"); return; }
   itimer = setTimeout(() => runImgSearch(v), 450);
 });
+$("#srcSel").addEventListener("change", (e) => {
+  S.src = e.target.value; webItems = []; $("#imgGrid").innerHTML = ""; setStatus("", false, "imgs"); fillSrc();
+  const v = $("#qi").value.trim(); if (v.length >= 2) runImgSearch(v);
+});
+fetch("/api/sources").then((r) => r.json()).then((j) => { AV = j.available || {}; if (S.cur && S.view === "edit") fillSrc(); }).catch(() => {});
 // Baixa a imagem pelo servidor, reduz e guarda em Fotos (com autor e licença), para poder usar em qualquer lista.
 async function importWeb(w) {
+  if (w.r) return { id: w.id, name: w.name, r: w.r };   // item de uma fonte (Steam, filmes…): guarda só a referência da capa
   const had = Object.values(LIB).find((l) => l.web === w.id);
   if (had) return { id: had.id, name: had.name, u: 1 };
   try {
@@ -927,7 +1035,11 @@ document.addEventListener("click", (e) => {
   const t = e.target;
   // telas de início e de modelos
   const go = t.closest("[data-go]");
-  if (go) { goView(go.dataset.go); return; }
+  if (go) { goView(go.dataset.go, go.dataset.cat); return; }
+  const mc = t.closest("[data-mycat]");
+  if (mc) { myFilter = mc.dataset.mycat; renderHome(); return; }
+  const ln = t.closest("[data-ltpl]");
+  if (ln) { startLineup(ln.dataset.ltpl); return; }
   const nw = t.closest("[data-new]");
   if (nw) { startNew(nw.dataset.new); return; }
   const tpl = t.closest("[data-tpl]");
@@ -1409,9 +1521,9 @@ async function drawPitch() {
   };
   x.textBaseline = "alphabetic";
   x.fillStyle = "#8d9ab3"; x.font = '700 28px "Barlow Condensed", sans-serif';
-  x.fillText("TÉCNICO", RX, 168); side("c", 232);
+  x.fillText(TEMPLATES[M().template].coachHead.toUpperCase(), RX, 168); side("c", 232);
   x.fillStyle = "#8d9ab3"; x.font = '700 28px "Barlow Condensed", sans-serif';
-  x.fillText("RESERVAS", RX, 336);
+  x.fillText(TEMPLATES[M().template].benchHead.toUpperCase(), RX, 336);
   for (let j = 0; j < 7; j++) side("b" + j, 396 + j * 118);
   return c;
 }
@@ -1654,25 +1766,30 @@ document.addEventListener("click", async (e) => {
 });
 
 /* ---------- Comunidade ---------- */
-let comPosts = [], comMsg = "";
+let comPosts = [], comCats = [], comFilter = "";
 const fmtDate = (t) => new Date(t).toLocaleDateString("pt-BR");
 async function renderCommunity() {
   const box = $("#comList");
   box.innerHTML = '<p class="empty">Carregando…</p>';
   try {
     const r = await apiCall("GET", "/api/community");
-    comPosts = (await r.json()).posts || [];
+    const j = await r.json(); comPosts = j.posts || []; comCats = j.categories || [];
   } catch (_) { comPosts = []; box.innerHTML = '<p class="empty">Não consegui carregar a comunidade agora. Tente de novo em instantes.</p>'; return; }
   drawCommunity();
 }
 function drawCommunity() {
   const box = $("#comList");
+  if (comFilter && !comCats.some((c) => c.name === comFilter)) comFilter = "";
+  $("#comCats").innerHTML = comCats.length > 1
+    ? [["", "Todas", comPosts.length], ...comCats.map((c) => [c.name, c.name, c.count])].map(([v, n, k]) => `<button type="button" class="chip${comFilter === v ? " on" : ""}" data-ccat="${esc(v)}">${esc(n)} (${k})</button>`).join("")
+    : "";
+  const shown = comFilter ? comPosts.filter((p) => p.category === comFilter) : comPosts;
   if (!comPosts.length) { box.innerHTML = '<p class="empty">Ainda não há tierlists publicadas. Crie uma tierlist, entre na sua conta e clique em “Publicar na comunidade”.</p>'; return; }
-  box.innerHTML = comPosts.map((p) => {
+  box.innerHTML = shown.map((p) => {
     const strip = `linear-gradient(90deg, ${p.tiers.map((t, i, a) => `${t.color} ${(i / a.length) * 100}% ${((i + 1) / a.length) * 100}%`).join(", ")})`;
     return `<article class="pcard" aria-label="${esc(p.title)}">
       <div class="pstrip" style="background:${strip}"></div>
-      <div class="pbody"><span class="badge">Tierlist</span><h3>${esc(p.title)}</h3><p><span class="by">por</span> ${esc(p.author)} · ${p.n} ${p.n === 1 ? "item" : "itens"}</p><div class="smp">${esc(p.sample.join(", "))}…</div><small>${fmtDate(p.updated)}</small></div>
+      <div class="pbody"><span class="badge">${esc(p.category)}</span><h3>${esc(p.title)}</h3><p><span class="by">por</span> ${esc(p.author)} · ${p.n} ${p.n === 1 ? "item" : "itens"}</p><div class="smp">${esc(p.sample.join(", "))}…</div><small>${fmtDate(p.updated)}</small></div>
       <div class="pbtns"><button class="btn primary" type="button" data-cuse="${p.id}">Usar como modelo</button>${p.mine
         ? `<button class="btn" type="button" data-cdel="${p.id}">Retirar</button>`
         : `<button class="btn warn" type="button" data-crep="${p.id}">Denunciar</button>`}</div>
@@ -1692,27 +1809,45 @@ async function useCommunity(id, btn) {
   } catch (e) { alert(e.message || "Não consegui abrir esta tierlist."); }
   btn.disabled = false;
 }
-$("#btnPublish").addEventListener("click", () => {
+function fillPubCats(selected) {
+  const sel = $("#pubCat");
+  const have = new Map(comCats.map((c) => [c.name, c.count]));
+  for (const k of CATEGORIES) if (!have.has(k.name)) have.set(k.name, 0);   // as categorias do site sempre aparecem, mesmo sem publicações
+  sel.innerHTML = '<option value="">Escolha uma categoria…</option>'
+    + [...have].map(([n, q]) => `<option value="${esc(n)}">${esc(n)} (${q})</option>`).join("")
+    + '<option value="__new">➕ Criar nova categoria…</option>';
+  sel.value = selected && [...sel.options].some((o) => o.value === selected) ? selected : "";
+  $("#lblNewCat").classList.toggle("hide", sel.value !== "__new");
+}
+let pubTouched = false;   // a pessoa já mexeu na categoria: a lista que chega depois do servidor não pode trocar a escolha
+$("#pubCat").addEventListener("change", () => { pubTouched = true; const nw = $("#pubCat").value === "__new"; $("#lblNewCat").classList.toggle("hide", !nw); if (nw) $("#pubNewCat").focus(); });
+$("#btnPublish").addEventListener("click", async () => {
   if (!USER) { openAuth("login"); $("#authErr").textContent = "Entre na sua conta para publicar na comunidade."; return; }
   if (!hasContent("tier", M())) { setSaveState("Coloque itens na tierlist antes de publicar.", true); return; }
-  let nick = ""; try { nick = localStorage.getItem("escalacao-author") || ""; } catch (_) {}
-  $("#pubName").value = nick; $("#pubErr").textContent = "";
-  $("#pubDlg").showModal(); $("#pubName").focus();
+  let nick = "", last = ""; try { nick = localStorage.getItem("escalacao-author") || ""; last = localStorage.getItem("escalacao-cat") || ""; } catch (_) {}
+  $("#pubName").value = nick; $("#pubErr").textContent = ""; $("#pubNewCat").value = "";
+  pubTouched = false; const mine = curCat().name; fillPubCats(mine);
+  $("#pubDlg").showModal();
+  try { const j = await (await apiCall("GET", "/api/community")).json(); comPosts = j.posts || []; comCats = j.categories || []; fillPubCats(pubTouched ? $("#pubCat").value : mine); } catch (_) {}
+  (nick ? $("#pubCat") : $("#pubName")).focus();
 });
 $("#pubCancel").addEventListener("click", () => $("#pubDlg").close());
 $("#pubForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const author = $("#pubName").value.trim(), err = (m) => { $("#pubErr").textContent = m; };
+  const pick = $("#pubCat").value, category = (pick === "__new" ? $("#pubNewCat").value : pick).replace(/\s+/g, " ").trim();
+  if (!pick) return err("Escolha a categoria da tierlist ou crie uma nova.");
+  if (category.length < 2) return err("Digite o nome da nova categoria (2 a 30 letras).");
   if (author.length < 2) return err("Escolha um nome de 2 a 24 letras.");
   const T = M(), lib = {};
   for (const g of [...T.pool, ...T.tiers.flatMap((t) => t.items)]) if (g.u && LIB[g.id]) lib[g.id] = LIB[g.id];
   save();   // garante que a lista está salva (e tem um id estável) antes de publicar
   const ok = $("#pubOk"); ok.disabled = true; err("");
   try {
-    const r = await apiCall("POST", "/api/community", { pid: S.cur.id, author, data: T, lib }), j = await r.json().catch(() => ({}));
+    const r = await apiCall("POST", "/api/community", { pid: S.cur.id, author, category, data: T, lib }), j = await r.json().catch(() => ({}));
     if (r.status === 401) { lostSession(); $("#pubDlg").close(); return openAuth("login"); }
     if (!r.ok) return err(j.error || "Não foi possível publicar.");
-    try { localStorage.setItem("escalacao-author", author); } catch (_) {}
+    try { localStorage.setItem("escalacao-author", author); localStorage.setItem("escalacao-cat", category); } catch (_) {}
     $("#pubDlg").close(); setSaveState("Publicada na comunidade ✓", false);
     setTimeout(showSync, 4000);
   } catch (_) { err("Sem conexão com o servidor. Tente de novo."); }
@@ -1720,6 +1855,8 @@ $("#pubForm").addEventListener("submit", async (e) => {
 });
 document.addEventListener("click", async (e) => {
   const t = e.target;
+  const cat = t.closest("[data-ccat]");
+  if (cat) { comFilter = cat.dataset.ccat; drawCommunity(); return; }
   const use = t.closest("[data-cuse]"), del = t.closest("[data-cdel]"), rep = t.closest("[data-crep]");
   if (use) return useCommunity(use.dataset.cuse, use);
   if (del && confirm("Retirar esta tierlist da comunidade? A sua cópia nas suas listas continua.")) {

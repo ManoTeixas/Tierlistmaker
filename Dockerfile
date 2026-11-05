@@ -1,6 +1,6 @@
 FROM node:22-alpine
 WORKDIR /app
-COPY package.json server.js auth.js community.js ./
+COPY package.json server.js auth.js community.js sources.js ./
 COPY public ./public
 ENV NODE_ENV=production DATA_DIR=/data TRUST_PROXY=1
 VOLUME /data
