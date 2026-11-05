@@ -1,12 +1,14 @@
 // Fontes de busca por categoria. Cada uma devolve itens { id, name, sub, r, thumb }:
 //   r = referência da imagem, entregue pelo endpoint /cover (o servidor busca e entrega; nada é guardado aqui).
 // Chaves e endereços vêm de variáveis de ambiente (os endereços só mudam nos testes).
+try { require('dns').setDefaultResultOrder('ipv4first'); } catch (_) {}   // alguns hospedeiros não alcançam IPv6 e dão timeout
 const UA = 'escalacao-games/1.0 (projeto pessoal)';
 const URLS = {
   steam: process.env.STEAM_URL || 'https://store.steampowered.com/api/storesearch/',
   spotifyToken: process.env.SPOTIFY_TOKEN_URL || 'https://accounts.spotify.com/api/token',
   spotify: process.env.SPOTIFY_API_URL || 'https://api.spotify.com/v1/search',
   itunes: process.env.ITUNES_URL || 'https://itunes.apple.com/search',
+  wiki: process.env.WIKI_URL || 'https://{lang}.wikipedia.org/w/api.php',
   tvmaze: process.env.TVMAZE_URL || 'https://api.tvmaze.com/search/shows',
   tmdb: process.env.TMDB_URL || 'https://api.themoviedb.org/3/search/',
   jikan: process.env.JIKAN_URL || 'https://api.jikan.moe/v4/anime',
@@ -96,6 +98,31 @@ async function itunesMovies(q) {
   }
   return out.slice(0, 20);
 }
+// Wikipédia (pt e en): pôsteres de filmes, sem chave. Só entram páginas que a Wikipédia descreve como filme.
+async function wikiFilms(q, tv) {
+  const call = (lang) => getJson(URLS.wiki.replace('{lang}', lang) + '?' + new URLSearchParams({
+    action: 'query', generator: 'search', gsrsearch: q + (tv ? (lang === 'pt' ? ' série de televisão' : ' television series') : (lang === 'pt' ? ' filme' : ' film')), gsrlimit: '15', prop: 'pageimages|description',
+    piprop: 'thumbnail', pithumbsize: '500', format: 'json', formatversion: '2', origin: '*' })).catch(() => ({}));
+  const [pt, en] = await Promise.all([call('pt'), call('en')]);
+  const list = (d) => ((d.query && d.query.pages) || []).sort((a, b) => (a.index || 0) - (b.index || 0))
+    .filter((p) => p.thumbnail && p.thumbnail.source && (tv ? /série|series|television|televisão|anime/i : /film/i).test(p.description || '') && (tv || !/série|series|television|televisão/i.test(p.description || '')));
+  const a = list(pt), b = list(en), seen = new Set(), out = [];
+  for (let i = 0; i < Math.max(a.length, b.length); i++) for (const p of [a[i], b[i]]) {
+    if (!p) continue;
+    const name = String(p.title).replace(/\s*\((\d{4}\s+)?(filme?|film|série|series|tv|television)[^)]*\)\s*$/i, ''), key = name.toLowerCase();
+    if (seen.has(key)) continue; seen.add(key);
+    out.push(item('wiki:' + p.pageid, name, (tv ? 'Série' : 'Filme') + ' · Wikipédia', ref(p.thumbnail.source)));
+  }
+  return out.slice(0, 20);
+}
+async function movies(q) {   // Apple primeiro; se não vier nada, Wikipédia
+  try { const a = await itunesMovies(q); if (a.length) return a; } catch (e) { console.error('itunes filmes:', e.message); }
+  return wikiFilms(q);
+}
+async function shows(q) {   // TVMaze primeiro; se não responder, Wikipédia
+  try { const a = await tvmaze(q); if (a.length) return a; } catch (e) { console.error('tvmaze:', e.message); }
+  return wikiFilms(q, true);
+}
 async function tvmaze(q) {
   const d = await getJson(URLS.tvmaze + '?' + new URLSearchParams({ q }));
   return (Array.isArray(d) ? d : []).map((x) => x.show).filter((s) => s && s.image && (s.image.original || s.image.medium)).slice(0, 15).map((s) =>
@@ -146,7 +173,7 @@ const NEEDS = {
 };
 // "music" usa o Spotify quando há credenciais e, sem elas, o iTunes.
 const PROVIDERS = {
-  steam, music: (q) => (hasSpotify ? spotify(q) : itunes(q)), tmdb_movie: (q) => (TMDB_KEY ? tmdb('movie', q).catch(() => itunesMovies(q)) : itunesMovies(q)), tmdb_tv: (q) => (TMDB_KEY ? tmdb('tv', q).catch(() => tvmaze(q)) : tvmaze(q)), jikan, openlibrary,
+  steam, music: (q) => (hasSpotify ? spotify(q) : itunes(q)), tmdb_movie: (q) => (TMDB_KEY ? tmdb('movie', q).catch(() => movies(q)) : movies(q)), tmdb_tv: (q) => (TMDB_KEY ? tmdb('tv', q).catch(() => shows(q)) : shows(q)), jikan, openlibrary,
 };
 const available = () => ({ steam: true, music: true, tmdb_movie: true, tmdb_tv: true, tmdb: !!TMDB_KEY, jikan: true, openlibrary: true, spotify: hasSpotify });
 
