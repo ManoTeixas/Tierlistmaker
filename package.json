@@ -4,7 +4,8 @@
   "private": true,
   "description": "Monte escalações de jogos da Steam em um campo de futebol",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=18"

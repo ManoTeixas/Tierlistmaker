@@ -87,11 +87,15 @@ Cada categoria tem seus modelos e sua própria fonte de busca na aba **Buscar** 
 |---|---|---|
 | Jogos | Steam | não |
 | Músicas | Spotify (ou Apple/iTunes se o Spotify não estiver configurado) | Spotify: sim |
-| Filmes e Séries | TMDB | sim (`TMDB_API_KEY`, gratuita) |
+| Filmes | Catálogo local (`catalog/filmes.json`); sem resultado, TMDB (se configurado), Apple/iTunes e Wikipédia | catálogo, Apple e Wikipédia: não; TMDB: sim |
+| Séries | TMDB (se configurado), TVMaze e Wikipédia | TMDB: sim (`TMDB_API_KEY`, gratuita); alternativas: não |
 | Animes | MyAnimeList (Jikan) | não |
 | Livros | Open Library | não |
 
+O catálogo de filmes é a fonte principal e aceita títulos em português ou no idioma original, com ou sem acentos e com o ano opcional. O servidor carrega o arquivo uma vez ao iniciar; reinicie depois de atualizar `catalog/filmes.json`. Se houver resultados locais, as fontes externas não são consultadas. A opção **Imagens da web** continua disponível no editor.
+
 Variáveis de ambiente (no Render: Environment):
+
 - `SPOTIFY_CLIENT_ID` e `SPOTIFY_CLIENT_SECRET`: credenciais do seu app em developer.spotify.com. Em modo de desenvolvimento a conta precisa ser Premium; a busca devolve no máximo 10 itens por tipo.
 - `TMDB_API_KEY`: chave gratuita em themoviedb.org. O site exibe o aviso de atribuição exigido pelo TMDB.
 

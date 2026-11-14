@@ -171,9 +171,41 @@ const NEEDS = {
   tmdb_movie: 'A busca de filmes ainda não foi configurada neste site (falta TMDB_API_KEY).',
   tmdb_tv: 'A busca de séries ainda não foi configurada neste site (falta TMDB_API_KEY).',
 };
+// O catálogo é carregado e normalizado uma vez, sem enviar o JSON inteiro ao navegador.
+const normalizeTitle = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const movieCatalog = require('./catalog/filmes.json').map((m) => ({
+  movie: m,
+  titles: [...new Set([normalizeTitle(m.titulo), normalizeTitle(m.titulo_original)])].filter(Boolean),
+}));
+function catalogMovies(q) {
+  const query = normalizeTitle(q);
+  if (!query) return [];
+  const words = query.split(' ');
+  return movieCatalog.map(({ movie, titles }) => {
+    let score = 0;
+    for (const title of titles) {
+      const text = title + ' ' + movie.ano;
+      if (!words.every((word) => text.includes(word))) continue;
+      score = Math.max(score, title === query ? 4 : title.startsWith(query) ? 3 : title.includes(query) ? 2 : 1);
+    }
+    return { movie, score };
+  }).filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score || (Number(b.movie.votos) || 0) - (Number(a.movie.votos) || 0))
+    .slice(0, 20).map(({ movie: m }) => item('tmdb:movie' + m.id,
+      m.ano ? `${m.titulo} (${m.ano})` : m.titulo, 'Filme · Catálogo', ref(m.poster)));
+}
+async function searchMovies(q) {
+  const local = catalogMovies(q);
+  if (local.length) return local;
+  if (TMDB_KEY) {
+    try { const results = await tmdb('movie', q); if (results.length) return results; }
+    catch (e) { console.error('tmdb filmes:', e.message); }
+  }
+  return movies(q); // Mantém Apple e Wikipédia quando o catálogo não encontra o filme.
+}
 // "music" usa o Spotify quando há credenciais e, sem elas, o iTunes.
 const PROVIDERS = {
-  steam, music: (q) => (hasSpotify ? spotify(q) : itunes(q)), tmdb_movie: (q) => (TMDB_KEY ? tmdb('movie', q).catch(() => movies(q)) : movies(q)), tmdb_tv: (q) => (TMDB_KEY ? tmdb('tv', q).catch(() => shows(q)) : shows(q)), jikan, openlibrary,
+  steam, music: (q) => (hasSpotify ? spotify(q) : itunes(q)), tmdb_movie: searchMovies, tmdb_tv: (q) => (TMDB_KEY ? tmdb('tv', q).catch(() => shows(q)) : shows(q)), jikan, openlibrary,
 };
 const available = () => ({ steam: true, music: true, tmdb_movie: true, tmdb_tv: true, tmdb: !!TMDB_KEY, jikan: true, openlibrary: true, spotify: hasSpotify });
 
