@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escalação de Jogos</title>
+<title>Escalação — seu gosto dá discussão</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <style>
   /* Layout: reservas e técnico à esquerda, campo (ou tierlist) no centro, busca/fotos à direita. */
   :root {
-    --ink: #0d1320;
-    --panel: #151d2e;
-    --line: #26324a;
-    --text: #e8edf7;
-    --mute: #8d9ab3;
-    --gold: #f4b942;
-    --pitch-a: #2f7f55;
-    --pitch-b: #2a7450;
+    --ink: #242321;
+    --panel: #2c2a27;
+    --line: #686156;
+    --text: #f4ebd8;
+    --mute: #c0b6a5;
+    --gold: #d8d85c;
+    --pitch-a: #376346;
+    --pitch-b: #315a3f;
     --font-d: "Barlow Condensed", "Arial Narrow", sans-serif;
     --font-b: "Barlow", system-ui, sans-serif;
     color-scheme: dark;
@@ -42,7 +42,7 @@
   .controls label { display: grid; gap: 3px; font-size: 12px; color: var(--mute); }
   .controls label.chk { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text); min-height: 38px; cursor: pointer; }
   select, .btn { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-height: 38px; cursor: pointer; }
-  select:hover, .btn:hover { border-color: #3a4b6d; }
+  select:hover, .btn:hover { border-color: #a99d87; }
   .btn.primary { background: var(--gold); border-color: var(--gold); color: #1a1405; font-weight: 600; }
   .btn.primary:hover { filter: brightness(1.06); }
   .btn:disabled { opacity: .6; cursor: progress; }
@@ -64,23 +64,23 @@
   .brc { display: flex; flex-direction: column; width: 210px; }
   .brc h3 { margin: 0 0 8px; text-align: center; font-family: var(--font-d); font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
   .brc .brm { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 8px; }
-  .brmatch { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #151d2e; }
+  .brmatch { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #2c2a27; }
   .brrow { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 3px 6px; cursor: pointer; font-size: 13px; font-weight: 600; position: relative; }
   .brrow + .brrow { border-top: 1px solid var(--line); }
-  .brrow:hover { background: #1d2a44; }
+  .brrow:hover { background: #3b382c; }
   .brrow.win { background: rgba(240,180,41,.18); box-shadow: inset 3px 0 0 var(--gold); }
   .brrow.lose { opacity: .45; }
   .brrow.empty { color: var(--mute); font-weight: 400; font-style: italic; }
   .brrow.sel { outline: 2px solid var(--gold); outline-offset: -2px; }
   .brrow .bt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .brrow .bc { flex: none; width: 28px; height: 28px; border-radius: 5px; overflow: hidden; background: #26324a; display: grid; place-items: center; font-size: 10px; }
+  .brrow .bc { flex: none; width: 28px; height: 28px; border-radius: 5px; overflow: hidden; background: #686156; display: grid; place-items: center; font-size: 10px; }
   .brrow .bc img, .brrow .bc .ini { width: 100%; height: 100%; object-fit: cover; display: grid; place-items: center; font-size: 10px; text-align: center; line-height: 1; }
   .brrow button { flex: none; border: 0; border-radius: 50%; width: 20px; height: 20px; padding: 0; cursor: pointer; font-size: 11px; line-height: 1; }
   .brrow .brx { background: rgba(13,19,32,.9); color: #fff; display: none; }
   .brrow:hover .brx { display: block; }
   .brrow .tplay { position: static; }
   .brchamp { margin: auto 0; text-align: center; border: 2px solid var(--gold); border-radius: 14px; padding: 12px 8px; background: rgba(240,180,41,.1); }
-  .brchamp .bc { width: 96px; height: 96px; margin: 8px auto; border-radius: 10px; overflow: hidden; background: #26324a; display: grid; place-items: center; }
+  .brchamp .bc { width: 96px; height: 96px; margin: 8px auto; border-radius: 10px; overflow: hidden; background: #686156; display: grid; place-items: center; }
   .brchamp .bc img, .brchamp .bc .ini { width: 100%; height: 100%; object-fit: cover; display: grid; place-items: center; text-align: center; padding: 4px; }
   .brrow .bc .ini.tx, .brchamp .bc .ini.tx { font-size: 0; }
   .brchamp b { font-size: 15px; }
@@ -88,7 +88,7 @@
   .catpick { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--mute); }
   .brtool { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
   .brtool .btn { padding: 6px 12px; } #brZoomPct { min-width: 48px; text-align: center; color: var(--mute); font-size: 13px; }
-  .brwrap.full { position: fixed; inset: 0; z-index: 90; background: var(--bg, #0d1320); padding: 12px; grid-template-rows: auto 1fr; }
+  .brwrap.full { position: fixed; inset: 0; z-index: 90; background: var(--bg, #242321); padding: 12px; grid-template-rows: auto 1fr; }
   .brwrap.full .brboard { max-height: none; height: 100%; } .brwrap.full #brText { display: none; }
   .brboard { max-height: 78vh; }
   .pitch { user-select: none; -webkit-user-select: none; }
@@ -129,12 +129,12 @@
   .disc:hover { transform: scale(1.06); }
   .slot.dragging .disc { transform: scale(1.1); box-shadow: 0 10px 24px rgba(0,0,0,.55); transition: none; }
   .plus { font-size: calc(var(--d) * .5); line-height: 1; font-weight: 300; }
-  .slot.filled .disc { border: 3px solid #fff; background: #1d2740; }
+  .slot.filled .disc { border: 3px solid #fff; background: #37332d; }
   .slot.sel .disc { border-color: var(--gold); border-style: solid; box-shadow: 0 0 0 4px rgba(244,185,66,.5); }
   .slot.over .disc { transform: scale(1.12); box-shadow: 0 0 0 4px rgba(255,255,255,.55); }
   .disc img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; display: block; pointer-events: none; }
   .ini { font-family: var(--font-d); font-weight: 700; font-size: calc(var(--d) * .36); letter-spacing: .04em; }
-  .rm { position: absolute; top: -4px; right: calc(50% - var(--d) / 2 - 6px); width: 22px; height: 22px; border-radius: 50%; border: 0; background: #0d1320; color: #fff; font-size: 15px; line-height: 1; cursor: pointer; display: none; place-items: center; box-shadow: 0 0 0 2px rgba(255,255,255,.7); z-index: 2; }
+  .rm { position: absolute; top: -4px; right: calc(50% - var(--d) / 2 - 6px); width: 22px; height: 22px; border-radius: 50%; border: 0; background: #242321; color: #fff; font-size: 15px; line-height: 1; cursor: pointer; display: none; place-items: center; box-shadow: 0 0 0 2px rgba(255,255,255,.7); z-index: 2; }
   .slot.side .rm { right: auto; left: calc(var(--d) - 16px); }
   .slot:hover .rm, .slot:focus-within .rm { display: grid; }
   .slot.dragging .rm { display: none; }
@@ -151,7 +151,7 @@
   /* Tierlist */
   .tierwrap { display: grid; gap: 12px; min-width: 0; }
   .tier { display: grid; gap: 6px; }
-  .trow { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; min-height: 112px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #1b2438; }
+  .trow { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; min-height: 112px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #302d27; }
   .trow.sel { box-shadow: 0 0 0 3px rgba(244,185,66,.65); }
   .tlab { display: grid; place-items: center; padding: 6px; }
   .tname { font-family: var(--font-d); font-weight: 700; font-size: 28px; line-height: 1.05; text-align: center; max-width: 100%; overflow-wrap: anywhere; cursor: text; padding: 2px 4px; border-radius: 4px; }
@@ -161,11 +161,11 @@
   .tarea.over { background: rgba(255,255,255,.07); }
   .tctl { display: grid; gap: 4px; padding: 6px; align-content: center; }
   .ib { width: 28px; height: 28px; padding: 0; line-height: 1; border: 1px solid var(--line); border-radius: 6px; background: var(--ink); cursor: pointer; font-size: 12px; }
-  .ib:hover { border-color: #3a4b6d; }
+  .ib:hover { border-color: #a99d87; }
   input[type="color"].ib { padding: 2px; }
   .poolh { margin-top: 6px; }
   .tarea.pool { border: 1px dashed var(--line); border-radius: 10px; background: var(--panel); min-height: 130px; }
-  .tile { position: relative; width: 84px; aspect-ratio: 4 / 5; border-radius: 6px; overflow: hidden; background: #1d2740; cursor: grab; display: grid; place-items: center; color: #fff; }
+  .tile { position: relative; width: 84px; aspect-ratio: 4 / 5; border-radius: 6px; overflow: hidden; background: #37332d; cursor: grab; display: grid; place-items: center; color: #fff; }
   .tile img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; display: block; pointer-events: none; }
   .tile .ini { font-size: 24px; }
   .tile .cap { display: none; position: absolute; inset: auto 0 0 0; padding: 16px 4px 3px; font-size: 11px; line-height: 1.15; font-weight: 600; text-align: center; background: linear-gradient(transparent, rgba(0,0,0,.88)); pointer-events: none; overflow-wrap: anywhere; }
@@ -204,7 +204,7 @@
   .results { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; overflow-y: auto; min-height: 0; max-height: 60vh; }
   @media (min-width: 1080px) { .results { max-height: none; flex: 1; } }
   .res { display: grid; grid-template-columns: 92px 1fr auto; gap: 10px; align-items: center; padding: 6px; border: 1px solid transparent; border-radius: 10px; background: var(--ink); cursor: grab; }
-  .res:hover { border-color: #3a4b6d; }
+  .res:hover { border-color: #a99d87; }
   .res img { width: 92px; height: 43px; object-fit: cover; border-radius: 6px; background: var(--line); display: block; }
   .res.lib { grid-template-columns: 48px 1fr auto; }
   .res.lib img { width: 48px; height: 48px; object-position: center 20%; }
@@ -248,7 +248,7 @@
   .mcards, .tgrid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
   .mcard, .tcard { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 0; overflow: hidden; cursor: pointer; display: grid; align-content: start; transition: transform .15s, border-color .15s; }
   .mcard:hover, .tcard:hover { transform: translateY(-3px); border-color: var(--gold); }
-  .mcard .art { background: #0f1727; height: 150px; padding: 14px; display: grid; place-items: center; }
+  .mcard .art { background: #242321; height: 150px; padding: 14px; display: grid; place-items: center; }
   .mcard .art svg { height: 100%; width: auto; max-width: 100%; }
   .mcard .body, .tcard .body { padding: 14px 16px 18px; display: grid; gap: 6px; align-content: start; }
   .mcard { grid-template-rows: auto 1fr; }
@@ -260,7 +260,7 @@
   .tstrip { display: flex; height: 46px; }
   .tstrip span { flex: 1; display: grid; place-items: center; font-family: var(--font-d); font-weight: 700; font-size: 20px; color: #1a1a1a; }
   .tcard.blank { border-style: dashed; }
-  .tcard.blank .tstrip { background: #0f1727; color: var(--mute); display: grid; place-items: center; font-size: 30px; font-weight: 300; }
+  .tcard.blank .tstrip { background: #242321; color: var(--mute); display: grid; place-items: center; font-size: 30px; font-weight: 300; }
   .saved { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
   .pcard { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; cursor: pointer; display: grid; grid-template-rows: auto 1fr auto; }
   .pcard:hover { border-color: var(--gold); }
@@ -320,39 +320,75 @@
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
 </style>
+<link rel="stylesheet" href="/locadora.css">
+<meta name="theme-color" content="#242321">
+<meta name="description" content="Crie tierlists, escalações e chaveamentos de jogos, filmes, músicas e muito mais. Seus favoritos, do seu jeito.">
 </head>
 <body data-view="home">
 <!-- Tela inicial -->
 <section class="home" id="home" aria-label="Início">
-  <div class="hhead">
-    <span class="mark" aria-hidden="true"></span>
-    <div>
-      <h1>Escalação</h1>
-      <p>Monte escalações (de futebol, filmes, jogos, músicas…) e tierlists com suas fotos, imagens da web ou só texto. Crie uma conta para guardar suas listas e acessá-las de qualquer aparelho.</p>
-    </div>
+  <header class="site-header">
+    <a class="wordmark" href="#" aria-label="Escalação, início">escalação</a>
+    <nav class="site-nav" aria-label="Navegação principal">
+      <a href="#criar">Criar</a><a href="#minhas-listas">Minhas listas</a>
+      <button type="button" data-go="community">Comunidade</button>
+    </nav>
     <div class="acct" id="acct"></div>
-  </div>
-
-  <div>
-    <h2>Criar</h2>
-    <div class="mcards cgrid" id="fmtGrid"></div>
-  </div>
-
-  <div>
-    <h2>Explorar</h2>
-    <div class="mcards cgrid">
-      <button class="mcard" type="button" data-go="community">
-        <div class="art" style="background:linear-gradient(135deg,#2e5a7a,#5a2e7a)"><span class="big">★</span></div>
-        <div class="body"><h3>Comunidade</h3><p>Veja tierlists publicadas por outras pessoas, use como modelo e publique as suas.</p><span class="go">Ver tierlists →</span></div>
-      </button>
+  </header>
+  <div class="hero">
+    <div>
+      <p class="eyebrow">Seu pequeno acervo de grandes opiniões</p>
+      <h1><span>Bom gosto</span><span class="underlined">dá discussão.</span></h1>
+      <p class="hero-copy">Aquele jogo que ninguém supera. O filme que você defende. O seu time de todos os tempos. Coloque seus favoritos em ordem e puxe a conversa.</p>
+      <a class="hero-link" href="#criar">Monte sua primeira lista <span aria-hidden="true">↗</span></a>
+    </div>
+    <div class="hero-art">
+      <svg viewBox="0 0 440 300" role="img" aria-label="Uma coleção de fitas com os temas filmes, músicas, jogos, animes e livros">
+        <circle cx="94" cy="75" r="55" fill="#d8d85c"/>
+        <path d="M63 70l16 11 31-33" fill="none" stroke="#242321" stroke-width="8"/>
+        <text x="94" y="107" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="17" fill="#242321">VALE O REPLAY</text>
+        <g transform="translate(162 25) rotate(-7)">
+          <path d="M0 0h230v47H0z" fill="#f4ebd8" stroke="#10100e" stroke-width="3"/><path d="M211 0h19v47h-19z" fill="#aaa08d"/>
+          <text x="18" y="33" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="31" fill="#242321">FILMES</text>
+          <path d="M-9 48h230v47H-9z" fill="#cb4532" stroke="#10100e" stroke-width="3"/><path d="M202 48h19v47h-19z" fill="#993125"/>
+          <text x="9" y="81" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="31" fill="#fff4df">MÚSICAS</text>
+          <path d="M4 96h230v47H4z" fill="#d8d85c" stroke="#10100e" stroke-width="3"/><path d="M215 96h19v47h-19z" fill="#a3a346"/>
+          <text x="22" y="129" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="31" fill="#242321">JOGOS</text>
+          <path d="M-12 144h230v47H-12z" fill="#7c9275" stroke="#10100e" stroke-width="3"/><path d="M199 144h19v47h-19z" fill="#54664f"/>
+          <text x="6" y="177" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="31" fill="#17221a">ANIMES</text>
+          <path d="M1 192h230v47H1z" fill="#d1a16c" stroke="#10100e" stroke-width="3"/><path d="M212 192h19v47h-19z" fill="#a77b4d"/>
+          <text x="19" y="225" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="31" fill="#242321">LIVROS</text>
+        </g>
+        <path d="M39 280h378" stroke="#686156" stroke-width="3"/>
+        <g transform="translate(26 164) rotate(9 50 40)"><rect width="111" height="78" rx="3" fill="#171715" stroke="#f4ebd8" stroke-width="2"/><rect x="10" y="9" width="91" height="27" fill="#cb4532"/><text x="55" y="29" text-anchor="middle" fill="#f4ebd8" font-size="17" font-family="Barlow Condensed, sans-serif" font-weight="700">FAVORITOS VOL. 1</text><circle cx="32" cy="56" r="11" fill="#686156"/><circle cx="79" cy="56" r="11" fill="#686156"/><path d="M32 56h47" stroke="#f4ebd8" stroke-width="3"/></g>
+      </svg>
+      <p class="shelf-caption">Não precisa devolver na segunda.</p>
     </div>
   </div>
-
-  <div>
-    <h2>Minhas listas</h2>
+  <section id="criar" aria-labelledby="create-heading">
+    <div class="section-heading"><h2 id="create-heading"><span class="number">01 /</span> Escolha seu formato</h2><p>Três jeitos de começar a conversa.</p></div>
+    <div class="mcards cgrid" id="fmtGrid"></div>
+  </section>
+  <nav class="category-index" aria-label="Explorar por tema">
+    <span>Qual é a sua praia?</span>
+    <button type="button" data-go="category" data-fmt="" data-cat="jogos">Jogos</button>
+    <button type="button" data-go="category" data-fmt="" data-cat="filmes">Filmes</button>
+    <button type="button" data-go="category" data-fmt="" data-cat="musica">Músicas</button>
+    <button type="button" data-go="category" data-fmt="" data-cat="animes">Animes</button>
+    <button type="button" data-go="category" data-fmt="" data-cat="futebol">Futebol</button>
+    <button type="button" data-go="category" data-fmt="" data-cat="livros">Livros</button>
+    <button type="button" data-go="category" data-fmt="" data-cat="comida">Comida</button>
+  </nav>
+  <section id="minhas-listas" aria-labelledby="lists-heading">
+    <div class="section-heading"><h2 id="lists-heading" class="ticket-heading">Minhas listas</h2><p>Seu gosto, guardado aqui.</p></div>
     <div class="catbar" id="myCats" role="group" aria-label="Filtrar por categoria"></div>
     <div class="saved" id="savedList"></div>
-  </div>
+  </section>
+  <aside class="community-banner">
+    <div><h2>A boa é compartilhar.</h2><p>Veja as tierlists da comunidade e faça a sua versão.</p></div>
+    <button class="btn primary" type="button" data-go="community">Explorar a comunidade ↗</button>
+  </aside>
+  <footer class="site-footer"><b>escalação</b><span>Listas pessoais. Opiniões fortes. Tudo em boa companhia.</span></footer>
 </section>
 
 <!-- Escolha da categoria (depois de Tierlist ou Escalação) -->
@@ -466,7 +502,7 @@
     <div class="tier" id="tierRows"></div>
     <form class="textadd" id="textAdd" autocomplete="off">
       <input id="textName" maxlength="300" placeholder="Novo elemento (ex.: Mob Psycho 100)" aria-label="Texto do elemento. Separe vários com vírgula">
-      <label class="colorpick" title="Cor de fundo do elemento">Cor <input id="textColor" type="color" value="#6a3fa0" aria-label="Cor de fundo do elemento"></label>
+      <label class="colorpick" title="Cor de fundo do elemento">Cor <input id="textColor" type="color" value="#cb4532" aria-label="Cor de fundo do elemento"></label>
       <button class="btn" type="submit">Adicionar elemento</button>
     </form>
     <h2 class="poolh">Sem tier</h2>
@@ -481,7 +517,7 @@
     <div class="brboard" id="brScroll"><div class="brk" id="brBoard"></div></div>
     <form class="textadd" id="brText" autocomplete="off">
       <input id="brName" maxlength="300" placeholder="Novo time (ex.: Naruto). Separe vários com vírgula" aria-label="Nome do time. Separe vários com vírgula">
-      <label class="colorpick" title="Cor de fundo">Cor <input id="brColor" type="color" value="#6a3fa0" aria-label="Cor de fundo do time"></label>
+      <label class="colorpick" title="Cor de fundo">Cor <input id="brColor" type="color" value="#cb4532" aria-label="Cor de fundo do time"></label>
       <button class="btn" type="submit">Adicionar time</button>
     </form>
   </section>
@@ -494,7 +530,7 @@
     <div class="target" id="target"></div>
     <form class="textadd slottext" id="slotText" autocomplete="off">
       <input id="slotName" maxlength="40" placeholder="Elemento só de texto (ex.: Neymar)" aria-label="Texto do elemento para a vaga">
-      <label class="colorpick" title="Cor de fundo">Cor <input id="slotColor" type="color" value="#6a3fa0" aria-label="Cor de fundo do elemento"></label>
+      <label class="colorpick" title="Cor de fundo">Cor <input id="slotColor" type="color" value="#cb4532" aria-label="Cor de fundo do elemento"></label>
       <button class="btn" type="submit">Adicionar elemento</button>
     </form>
 
@@ -1106,13 +1142,16 @@ function renderPick() {
 }
 let myFilter = "";
 function renderHome() {
+  const previews = {
+    tier: '<svg viewBox="0 0 280 120" aria-hidden="true"><rect width="280" height="120" fill="#242321"/><path d="M0 40h280M0 80h280" stroke="#686156"/><path d="M0 0h42v40H0z" fill="#cb4532"/><path d="M0 40h42v40H0z" fill="#d1a16c"/><path d="M0 80h42v40H0z" fill="#d8d85c"/><g fill="#242321" font-family="Barlow Condensed, sans-serif" font-size="26" font-weight="700" text-anchor="middle"><text x="21" y="29">S</text><text x="21" y="69">A</text><text x="21" y="109">B</text></g><g stroke="#f4ebd8"><path d="M51 5h46v30H51z" fill="#8d6655"/><path d="M103 5h46v30h-46z" fill="#6b806e"/><path d="M155 5h46v30h-46z" fill="#c8a264"/><path d="M51 45h46v30H51z" fill="#565c75"/><path d="M103 45h46v30h-46z" fill="#9c5847"/><path d="M51 85h46v30H51z" fill="#66817f"/></g><g fill="#f4ebd8" font-size="17" text-anchor="middle" font-family="Georgia, serif"><text x="74" y="27">I</text><text x="126" y="27">II</text><text x="178" y="27">III</text><text x="74" y="67">IV</text><text x="126" y="67">V</text><text x="74" y="107">VI</text></g></svg>',
+    lineup: '<svg viewBox="0 0 280 120" aria-hidden="true"><rect x="1" y="1" width="278" height="118" fill="#376346" stroke="#a6b69c"/><g fill="none" stroke="#e8e6c9" stroke-width="1.5"><path d="M12 10h256v100H12zM140 10v100M12 34h35v52H12M268 34h-35v52h35"/><circle cx="140" cy="60" r="22"/></g><g fill="#cb4532" stroke="#f4ebd8" stroke-width="2"><path id="shirt-preview" d="M61 22l8-4h8l8 4-4 9-4-2v14H69V29l-4 2z"/><path d="M131 22l8-4h8l8 4-4 9-4-2v14h-8V29l-4 2zM201 22l8-4h8l8 4-4 9-4-2v14h-8V29l-4 2zM96 70l8-4h8l8 4-4 9-4-2v14h-8V77l-4 2zM166 70l8-4h8l8 4-4 9-4-2v14h-8V77l-4 2z"/></g></svg>',
+    bracket: '<svg viewBox="0 0 280 120" aria-hidden="true"><g fill="none" stroke="#f4ebd8" stroke-width="3"><path d="M14 13h50v25H14M64 26h50v34h45M14 83h50v25H14M64 96h50V60M266 13h-50v25h50M216 26h-50v34h-7M266 83h-50v25h50M216 96h-50V60"/></g><circle cx="140" cy="60" r="19" fill="#d8d85c"/><path d="M131 51h18v10c0 10-18 10-18 0zM140 67v8M134 76h12" fill="none" stroke="#242321" stroke-width="3"/></svg>'
+  };
   $("#fmtGrid").innerHTML = [
-    ["tier", "Tierlists", "T", 210, "Ranqueie qualquer coisa em tiers: jogos, músicas, filmes, animes, comida…"],
-    ["lineup", "Escalações", "⚽", 140, "Escalações de futebol e versões com prêmios e vagas temáticas (melhor roteiro, melhor trilha…)."],
-  ].map(([f, n, ic, hue, d]) => `<button class="mcard" type="button" data-go="pick" data-fmt="${f}">
-      <div class="art" style="background:linear-gradient(135deg,hsl(${hue},45%,30%),hsl(${hue + 50},45%,20%))"><span class="big">${ic}</span></div>
-      <div class="body"><h3>${n}</h3><p>${d}</p><span class="go">Escolher categoria →</span></div></button>`).join("")
-    + `<button class="mcard" type="button" data-go="pick" data-fmt="bracket"><div class="art" style="background:linear-gradient(135deg,hsl(280,45%,30%),hsl(330,45%,20%))"><span class="big">🏆</span></div><div class="body"><h3>Chaveamentos</h3><p>Mata-mata de 4 a 64 times: escolha os vencedores de cada duelo até o campeão.</p><span class="go">Escolher categoria →</span></div></button>`;
+    ["tier", "Tierlist", "01", "Do indispensável ao tanto faz. Cada favorito no seu lugar.", "Montar tierlist"],
+    ["lineup", "Escalação", "02", "Seu time ideal, no campo ou fora dele. Você decide quem joga.", "Escalar favoritos"],
+    ["bracket", "Chaveamento", "03", "Um contra um, até sobrar o campeão. Quem leva essa?", "Criar chaveamento"]
+  ].map(([f, name, n, description, action]) => `<button class="mcard format-card" type="button" data-go="pick" data-fmt="${f}"><div class="format-label"><span>${name}</span><small>${n}</small></div><div class="art format-art">${previews[f]}</div><div class="body"><p>${description}</p><span class="go">${action}<span aria-hidden="true">↗</span></span></div></button>`).join("");
   const all = [...S.projects].sort((a, b) => b.updated - a.updated);
   const used = CATEGORIES.filter((k) => all.some((p) => p.cat === k.id));
   if (myFilter && !used.some((k) => k.id === myFilter)) myFilter = "";
@@ -1122,7 +1161,7 @@ function renderHome() {
   const list = myFilter ? all.filter((p) => p.cat === myFilter) : all;
   $("#savedList").innerHTML = list.length ? list.map((p) => {
     const strip = p.mode === "bracket"
-      ? "repeating-linear-gradient(90deg, #6a3fa0 0 18px, #1b2438 18px 22px)"
+      ? "repeating-linear-gradient(90deg, #cb4532 0 18px, #302d27 18px 22px)"
       : p.mode === "tier"
       ? `linear-gradient(90deg, ${p.data.tiers.map((t, i, a) => `${t.color} ${(i / a.length) * 100}% ${((i + 1) / a.length) * 100}%`).join(", ")})`
       : "repeating-linear-gradient(90deg, var(--pitch-a) 0 26px, var(--pitch-b) 26px 52px)";
@@ -1698,7 +1737,7 @@ function drawDisc(x, cx, cy, r, game, im) {
       ls.forEach((ln, k) => x.fillText(ln, cx, cy - (ls.length * (fs + 2)) / 2 + fs + k * (fs + 2) - 2));
     } else if (im) drawCover(x, im, cx - r, cy - r, 2 * r, 2 * r);
     else {
-      x.fillStyle = "#26324a"; x.fillRect(cx - r, cy - r, 2 * r, 2 * r);
+      x.fillStyle = "#686156"; x.fillRect(cx - r, cy - r, 2 * r, 2 * r);
       x.fillStyle = "#fff"; x.font = `700 ${r * 0.7}px "Barlow Condensed", sans-serif`; x.textAlign = "center"; x.textBaseline = "middle";
       x.fillText(initials(game.name), cx, cy);
     }
@@ -1713,11 +1752,11 @@ function drawDisc(x, cx, cy, r, game, im) {
 }
 function titleBlock(x, sub) {
   x.textAlign = "left"; x.textBaseline = "alphabetic";
-  x.fillStyle = "#e8edf7"; x.font = '700 58px "Barlow Condensed", sans-serif';
+  x.fillStyle = "#f4ebd8"; x.font = '700 58px "Barlow Condensed", sans-serif';
   let title = (M().title || "Minha lista").toUpperCase();
   while (x.measureText(title).width > 1080 && title.length > 3) title = title.slice(0, -1);
   x.fillText(title, 60, 92);
-  if (sub) { x.fillStyle = "#8d9ab3"; x.font = '600 24px "Barlow Condensed", sans-serif'; x.fillText(sub, 60, 124); }
+  if (sub) { x.fillStyle = "#c0b6a5"; x.font = '600 24px "Barlow Condensed", sans-serif'; x.fillText(sub, 60, 124); }
 }
 
 async function drawPitch() {
@@ -1726,13 +1765,13 @@ async function drawPitch() {
   const W = 1200, H = 1290, PX = 60, PY = 140, PW = 780, PH = 1092, K = PW / 500;
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const x = c.getContext("2d");
-  x.fillStyle = "#0d1320"; x.fillRect(0, 0, W, H);
+  x.fillStyle = "#242321"; x.fillRect(0, 0, W, H);
   titleBlock(x, "FORMAÇÃO " + FORMATIONS[M().formation].name);
 
   x.save();
   x.beginPath(); x.roundRect(PX, PY, PW, PH, 18); x.clip();
   x.translate(PX, PY); x.scale(K, K);
-  for (let i = 0; i < 7; i++) { x.fillStyle = i % 2 ? "#2a7450" : "#2f7f55"; x.fillRect(0, i * 100, 500, 100); }
+  for (let i = 0; i < 7; i++) { x.fillStyle = i % 2 ? "#315a3f" : "#376346"; x.fillRect(0, i * 100, 500, 100); }
   x.strokeStyle = "rgba(255,255,255,.78)"; x.lineWidth = 2.5; x.fillStyle = "rgba(255,255,255,.78)";
   for (const l of PITCH_LINES) {
     x.beginPath();
@@ -1775,15 +1814,15 @@ async function drawPitch() {
     const g = M().slots[key];
     drawDisc(x, RX + 40, cy, 38, g, imgs[key]);
     x.textBaseline = "alphabetic";
-    x.fillStyle = "#8d9ab3"; x.font = '700 19px "Barlow Condensed", sans-serif';
+    x.fillStyle = "#c0b6a5"; x.font = '700 19px "Barlow Condensed", sans-serif';
     let ty = cy - (g && !g.x ? 8 : -6);
     for (const ln of wrapLines(x, LABELS[key].toUpperCase(), 180, 2)) { x.fillText(ln, RX + 92, ty); ty += 21; }
     if (g && !g.x) { x.fillStyle = "#fff"; x.font = '600 17px "Barlow", sans-serif'; for (const ln of wrapLines(x, g.name, 180, 2)) { x.fillText(ln, RX + 92, ty); ty += 20; } }
   };
   x.textBaseline = "alphabetic";
-  x.fillStyle = "#8d9ab3"; x.font = '700 28px "Barlow Condensed", sans-serif';
+  x.fillStyle = "#c0b6a5"; x.font = '700 28px "Barlow Condensed", sans-serif';
   x.fillText(TEMPLATES[M().template].coachHead.toUpperCase(), RX, 168); side("c", 232);
-  x.fillStyle = "#8d9ab3"; x.font = '700 28px "Barlow Condensed", sans-serif';
+  x.fillStyle = "#c0b6a5"; x.font = '700 28px "Barlow Condensed", sans-serif';
   x.fillText(TEMPLATES[M().template].benchHead.toUpperCase(), RX, 336);
   for (let j = 0; j < 7; j++) side("b" + j, 396 + j * 118);
   return c;
@@ -1800,7 +1839,7 @@ async function drawTier() {
   if (T.pool.length) H += 56 + rowH(T.pool.length);
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const x = c.getContext("2d");
-  x.fillStyle = "#0d1320"; x.fillRect(0, 0, W, H);
+  x.fillStyle = "#242321"; x.fillRect(0, 0, W, H);
   titleBlock(x, null);
   const tiles = (list, ty0, x0 = AX) => {
     list.forEach((g, i) => {
@@ -1818,7 +1857,7 @@ async function drawTier() {
         const start = g.ico ? ty + 80 : ty + TH / 2 - (ls.length * lh) / 2 + fs;
         ls.forEach((ln, k) => x.fillText(ln, tx + TW / 2, start + k * lh));
       } else if (im) drawCover(x, im, tx, ty, TW, TH);
-      else { x.fillStyle = "#26324a"; x.fillRect(tx, ty, TW, TH); x.fillStyle = "#fff"; x.font = '700 32px "Barlow Condensed", sans-serif'; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(initials(g.name), tx + TW / 2, ty + TH / 2); }
+      else { x.fillStyle = "#686156"; x.fillRect(tx, ty, TW, TH); x.fillStyle = "#fff"; x.font = '700 32px "Barlow Condensed", sans-serif'; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(initials(g.name), tx + TW / 2, ty + TH / 2); }
       if (T.names && !g.x) {
         const grad = x.createLinearGradient(0, ty + TH - 44, 0, ty + TH);
         grad.addColorStop(0, "rgba(0,0,0,0)"); grad.addColorStop(1, "rgba(0,0,0,.88)");
@@ -1834,7 +1873,7 @@ async function drawTier() {
   for (const t of T.tiers) {
     const h = rowH(t.items.length);
     x.fillStyle = t.color; x.fillRect(PAD, y, LABW, h);
-    x.fillStyle = "#1b2438"; x.fillRect(AX, y, AW, h);
+    x.fillStyle = "#302d27"; x.fillRect(AX, y, AW, h);
     x.fillStyle = inkFor(t.color); x.textAlign = "center"; x.textBaseline = "alphabetic";
     let fs = 38; x.font = `700 ${fs}px "Barlow Condensed", sans-serif`;
     const wmax = LABW - 24, longestW = () => Math.max(...t.name.split(/\s+/).map((w) => x.measureText(w).width));
@@ -1845,10 +1884,10 @@ async function drawTier() {
     y += h + 6;
   }
   if (T.pool.length) {
-    x.fillStyle = "#8d9ab3"; x.font = '700 28px "Barlow Condensed", sans-serif'; x.textAlign = "left"; x.textBaseline = "alphabetic";
+    x.fillStyle = "#c0b6a5"; x.font = '700 28px "Barlow Condensed", sans-serif'; x.textAlign = "left"; x.textBaseline = "alphabetic";
     x.fillText("SEM TIER", PAD, y + 34);
     y += 46;
-    x.fillStyle = "#151d2e"; x.fillRect(PAD, y, W - 2 * PAD, rowH(T.pool.length));
+    x.fillStyle = "#2c2a27"; x.fillRect(PAD, y, W - 2 * PAD, rowH(T.pool.length));
     tiles(T.pool, y, PAD);
   }
   return c;
@@ -1861,26 +1900,26 @@ async function drawBracket() {
   await Promise.all(ents.map(async (g) => { imgs.set(g.id, await loadItemImage(g)); }));
   const c = document.createElement("canvas"); c.width = Math.max(W, 1200); c.height = H;
   const x = c.getContext("2d");
-  x.fillStyle = "#0d1320"; x.fillRect(0, 0, c.width, H);
+  x.fillStyle = "#242321"; x.fillRect(0, 0, c.width, H);
   titleBlock(x, null);
   const cx = (r) => PAD + r * (CW + GAP);
   const row = (g, px, py, state) => {
-    x.fillStyle = state === "win" ? "#3a3220" : "#151d2e"; x.fillRect(px, py, CW, RH);
+    x.fillStyle = state === "win" ? "#3a3220" : "#2c2a27"; x.fillRect(px, py, CW, RH);
     if (state === "win") { x.fillStyle = "#f0b429"; x.fillRect(px, py, 4, RH); }
     x.globalAlpha = state === "lose" ? 0.45 : 1;
     if (g) {
       const im = imgs.get(g.id);
       x.save(); x.beginPath(); x.roundRect(px + 8, py + 4, RH - 8, RH - 8, 4); x.clip();
-      if (g.x) { x.fillStyle = txtBg(g); x.fillRect(px + 8, py + 4, RH - 8, RH - 8); } else if (im) drawCover(x, im, px + 8, py + 4, RH - 8, RH - 8); else { x.fillStyle = "#26324a"; x.fillRect(px + 8, py + 4, RH - 8, RH - 8); }
+      if (g.x) { x.fillStyle = txtBg(g); x.fillRect(px + 8, py + 4, RH - 8, RH - 8); } else if (im) drawCover(x, im, px + 8, py + 4, RH - 8, RH - 8); else { x.fillStyle = "#686156"; x.fillRect(px + 8, py + 4, RH - 8, RH - 8); }
       x.restore();
-      x.fillStyle = "#e8edf7"; x.font = '600 15px "Barlow", sans-serif'; x.textAlign = "left"; x.textBaseline = "middle";
+      x.fillStyle = "#f4ebd8"; x.font = '600 15px "Barlow", sans-serif'; x.textAlign = "left"; x.textBaseline = "middle";
       let n = g.name; while (x.measureText(n).width > CW - RH - 22 && n.length > 3) n = n.slice(0, -1);
       x.fillText(n === g.name ? n : n + "…", px + RH + 8, py + RH / 2 + 1);
     } else { x.fillStyle = "#6b7890"; x.font = 'italic 14px "Barlow", sans-serif'; x.textAlign = "left"; x.textBaseline = "middle"; x.fillText("a definir", px + 10, py + RH / 2 + 1); }
     x.globalAlpha = 1;
   };
   for (let r = 0; r < R; r++) {
-    x.fillStyle = "#8d9ab3"; x.font = '700 20px "Barlow Condensed", sans-serif'; x.textAlign = "center"; x.textBaseline = "alphabetic";
+    x.fillStyle = "#c0b6a5"; x.font = '700 20px "Barlow Condensed", sans-serif'; x.textAlign = "center"; x.textBaseline = "alphabetic";
     x.fillText(brName(r).toUpperCase(), cx(r) + CW / 2, top - 14);
     for (let m = 0; m < B.size >> (r + 1); m++) {
       const yy = top + (m + 0.5) * UNIT * 2 ** r - MH / 2;
@@ -1900,9 +1939,9 @@ async function drawBracket() {
   if (ch) {
     const im = imgs.get(ch.id), s = 80, px = fx + CW / 2 - s / 2;
     x.save(); x.beginPath(); x.roundRect(px, fy + 10, s, s, 8); x.clip();
-    if (ch.x) { x.fillStyle = txtBg(ch); x.fillRect(px, fy + 10, s, s); } else if (im) drawCover(x, im, px, fy + 10, s, s); else { x.fillStyle = "#26324a"; x.fillRect(px, fy + 10, s, s); }
+    if (ch.x) { x.fillStyle = txtBg(ch); x.fillRect(px, fy + 10, s, s); } else if (im) drawCover(x, im, px, fy + 10, s, s); else { x.fillStyle = "#686156"; x.fillRect(px, fy + 10, s, s); }
     x.restore();
-    x.fillStyle = "#e8edf7"; x.font = '700 17px "Barlow", sans-serif'; x.textAlign = "center"; x.textBaseline = "alphabetic";
+    x.fillStyle = "#f4ebd8"; x.font = '700 17px "Barlow", sans-serif'; x.textAlign = "center"; x.textBaseline = "alphabetic";
     wrapLines(x, ch.name, CW - 16, 2).forEach((ln, k) => x.fillText(ln, fx + CW / 2, fy + 112 + k * 18));
   }
   return c;
