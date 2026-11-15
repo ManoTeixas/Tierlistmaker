@@ -34,8 +34,8 @@ const ALLOWED_HOSTS = [...images.ALLOWED_HOSTS, 'steamstatic.com', 'scdn.co', 't
 const hostOk = (h) => ALLOWED_HOSTS.some((a) => h === a || h.endsWith('.' + a));
 const proxied = (u) => '/imgproxy?u=' + encodeURIComponent(u);
 const MAX_IMG = 6 * 1024 * 1024;
-async function searchImages(q, page) {
-  const r = await images.searchImages(q, page);
+async function searchImages(q, page, cat) {
+  const r = await images.searchImages(q, page, cat);
   return { items: r.items.map((i) => ({ ...i, thumb: proxied(i.thumb) })), more: r.more, page: r.page };
 }
 
@@ -96,7 +96,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/search') {
       const q = (url.searchParams.get('q') || '').trim().slice(0, 80), source = url.searchParams.get('source') || '';
       if (q.length < 2) return sendJson(res, 400, { error: 'Digite pelo menos 2 letras.' });
-      if (source === 'web') return sendJson(res, 200, await searchImages(q, url.searchParams.get('page')));
+      if (source === 'web') return sendJson(res, 200, await searchImages(q, url.searchParams.get('page'), url.searchParams.get('cat') || ''));
       try { return sendJson(res, 200, { items: await sources.search(source, q) }); }
       catch (e) { return sendJson(res, e.code || 502, { error: e.code ? e.message : 'Não consegui falar com o serviço de busca agora. ' + e.message }); }
     }
@@ -111,7 +111,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/images') {
       const q = (url.searchParams.get('q') || '').trim().slice(0, 80);
       if (q.length < 2) return sendJson(res, 400, { error: 'Digite pelo menos 2 letras.' });
-      return sendJson(res, 200, await searchImages(q, url.searchParams.get('page')));
+      return sendJson(res, 200, await searchImages(q, url.searchParams.get('page'), url.searchParams.get('cat') || ''));
     }
     if (url.pathname === '/imgproxy') {
       let img;

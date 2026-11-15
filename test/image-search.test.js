@@ -141,3 +141,40 @@ test('termo ambíguo: o sentido certo achado na busca não perde para a traduç�
   assert.ok(ids.indexOf('ov:b1') < ids.indexOf('ov:g1'));
   assert.ok(!ids.includes('wl:Rank.jpg'), 'imagem do artigo exato não entra na frente');
 });
+
+test('categoria da lista: sentido ambíguo certo vem primeiro e resultados da categoria sobem', async (t) => {
+  const calls = fakeNet(t, [
+    ['wikipedia', (u) => (u.searchParams.get('titles')
+      ? { query: { pages: [wikiPage('Brigadeiro', 'Rank.jpg', { langlinks: [{ lang: 'en', title: 'Brigadier' }] })] } }
+      : { query: { pages: [wikiPage('Avenida Brigadeiro Faria Lima', 'Av.jpg'), wikiPage('Brigadeiro (doce)', 'Doce.jpg', { description: 'doce brasileiro' })] } })],
+    ['openverse', () => ({ page_count: 1, results: [ov('s1', 'Estação Brigadeiro'), ov('f1', 'Brigadeiro', { tags: [{ name: 'food' }] })] })],
+    ['wikimedia', () => ({ query: { pages: [] } })],
+  ]);
+  const ids = (await loadImages().searchImages('brigadeiro', 1, 'comida')).items.map((i) => i.id);
+  assert.equal(ids[0], 'wp:Doce.jpg');
+  assert.ok(ids.indexOf('ov:f1') < ids.indexOf('ov:s1'), 'foto com etiqueta de comida sobe');
+  assert.ok(calls.some((u) => u.host.includes('wikimedia') && /brigadeiro food/.test(u.searchParams.get('gsrsearch') || '')), 'busca extra com o contexto');
+});
+
+test('categoria não troca o artigo exato por outro que só começa com o termo', async (t) => {
+  fakeNet(t, [
+    ['wikipedia', (u) => (u.searchParams.get('titles')
+      ? { query: { pages: [wikiPage('Batman', 'Batman.png', { langlinks: [{ lang: 'en', title: 'Batman' }] })] } }
+      : { query: { pages: [wikiPage('Batman v Superman', 'BvS.jpg', { description: 'filme de 2016' })] } })],
+    ['openverse', () => ({ page_count: 1, results: [] })],
+    ['wikimedia', () => ({ query: { pages: [] } })],
+  ]);
+  const r = await loadImages().searchImages('batman', 1, 'filmes');
+  assert.equal(r.items[0].id, 'wl:Batman.png');
+});
+
+test('conteúdo adulto é descartado de todas as fontes', async (t) => {
+  fakeNet(t, [
+    ['openverse', () => ({ page_count: 1, results: [ov('ok', 'Tony at film festival zz8'), ov('bad', 'Tony at Erotic Film Festival zz8'), ov('essex', 'Essex zz8 county')] })],
+    ['wikimedia', () => ({ query: { pages: [] } })],
+  ]);
+  const ids = (await loadImages().searchImages('zz8')).items.map((i) => i.id);
+  assert.ok(ids.includes('ov:ok'));
+  assert.ok(ids.includes('ov:essex'), 'palavras parecidas (Essex) não são bloqueadas');
+  assert.ok(!ids.includes('ov:bad'));
+});

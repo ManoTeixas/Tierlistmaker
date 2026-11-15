@@ -167,12 +167,30 @@ async function pexels(q, page) {
   return { items, more: !!d.next_page };
 }
 
+// Conteúdo adulto: o Commons não tem filtro (o Openverse já recebe mature=false). O site é para mandar aos amigos.
+const ADULT = /\b(erotic|erotica|erotico|porn|porno|pornographic|pornografia|xxx|nsfw|nude|nudes|nudity|naked|nua|nudez|sex|sexo|sexual|fetish|fetiche|bdsm|playboy|penthouse|hentai|stripper|striptease|topless|genitals|genitalia|penis|vagina)\b/;   // \b: "Essex" não conta
+const isAdult = (item) => ADULT.test(fold(item.name)) || ADULT.test(fold(item.tags));
 const JUNK_NAME = /^(img|dsc|dscn|dscf|pict?|p|image|photo|file|screenshot|untitled)[\s_-]*\d+/i;
 const OFF_TOPIC = /\b(map|mapa|diagram|chart|graph|logo|flag|bandeira|coat of arms|brasao|plan|planta|scan|document|stamp|selo|signature|assinatura)\b/;
 
+// Contexto da categoria da lista: palavras que indicam o sentido certo do termo (em português e inglês).
+// Numa lista de Comida, "brigadeiro" é o doce, não a avenida nem o posto militar.
+const CONTEXT = {
+  comida: { en: 'food', words: ['food', 'dish', 'cuisine', 'dessert', 'sweet', 'sweets', 'snack', 'cake', 'bread', 'candy', 'comida', 'prato', 'doce', 'culinaria', 'sobremesa', 'salgado', 'lanche', 'bolo', 'receita', 'iguaria', 'gastronomia'] },
+  filmes: { en: 'film', words: ['film', 'movie', 'cinema', 'poster', 'filme', 'longa metragem'] },
+  series: { en: 'television series', words: ['television', 'tv', 'series', 'sitcom', 'serie', 'televisao', 'telenovela'] },
+  animes: { en: 'anime', words: ['anime', 'manga', 'animation', 'animacao'] },
+  jogos: { en: 'video game', words: ['game', 'video game', 'videogame', 'jogo', 'jogo eletronico', 'console'] },
+  musica: { en: 'music', words: ['music', 'band', 'singer', 'album', 'song', 'concert', 'musica', 'banda', 'cantor', 'cantora', 'rapper', 'musician', 'musico', 'grupo musical'] },
+  livros: { en: 'book', words: ['book', 'novel', 'author', 'writer', 'livro', 'romance', 'escritor', 'escritora', 'literatura'] },
+  futebol: { en: 'football', words: ['football', 'soccer', 'futebol', 'footballer', 'futebolista', 'player', 'jogador', 'clube', 'club', 'stadium', 'estadio'] },
+};
+const hasWord = (text, w) => (' ' + text + ' ').includes(' ' + w + ' ');
+const inContext = (item, ctx) => !!ctx && ctx.words.some((w) => hasWord(fold(item.name), w) || hasWord(fold(item.tags), w));
+
 // Pontua relevância (palavras no título e nas etiquetas) e qualidade (tamanho, proporção, nome).
 // q = [{ words, text, weight }] para o termo original, o título do artigo e a tradução.
-function score(item, rank, q) {
+function score(item, rank, q, ctx) {
   const name = fold(item.name), tags = fold(item.tags);
   let s = 0;
   for (const { words: set, text, weight } of q) {
@@ -184,6 +202,7 @@ function score(item, rank, q) {
   if (s === 0) s -= 1.5;   // não tem nenhuma palavra da busca
   if (item.src === 'wp' && q.some(({ words: set }) => set.length && set.every((w) => name.includes(w)))) s += 1.5;   // artigo sobre o assunto
   if (item.lead) s += 6;   // imagem principal do artigo exato: é "a" foto daquilo
+  if (s > 0 && inContext(item, ctx)) s += 1.5;   // combina com a categoria da lista
   const qText = q.map((x) => x.text);
   const { w, h } = item;
   if (w && h) {
@@ -201,9 +220,10 @@ const dupKey = (i) => fold(i.name) + '|' + fold(i.author);
 // Mesma imagem da Wikimedia vinda por caminhos diferentes (artigo da Wikipédia e busca do Commons).
 const fileKey = (u) => { const m = /upload\.wikimedia\.org\/.+?\/(?:thumb\/)?[0-9a-f]\/[0-9a-f]{2}\/([^/]+)/.exec(u); return m ? decodeURIComponent(m[1]).toLowerCase() : null; };
 
-async function searchImages(term, page = 1) {
+async function searchImages(term, page = 1, cat = '') {
   page = Math.min(Math.max(1, Math.floor(Number(page)) || 1), MAX_PAGE);
-  return cached('img:' + fold(term) + ':' + page, 3600e3, async () => {
+  const ctx = CONTEXT[cat] || null;
+  return cached('img:' + fold(term) + ':' + page + ':' + (ctx ? cat : ''), 3600e3, async () => {
     let calls = 0, failures = 0, more = false;
     const run = async (fn, q) => {
       calls++;
@@ -213,6 +233,7 @@ async function searchImages(term, page = 1) {
     // O termo original já sai para todas as fontes enquanto a Wikipédia decide a tradução.
     const original = [run(openverse, term), run(commons, term), run(wikiSearch, term)];
     if (PEXELS_KEY) original.push(run(pexels, term));
+    if (ctx) original.push(run(commons, term + ' ' + ctx.en));   // ex.: "brigadeiro food"
     const understood = wikiLookup(term).then(async (wk) => {
       const tr = await translate(term, wk);
       const l = tr.en ? await Promise.all([run(openverse, tr.en), run(commons, tr.en)]) : [];
@@ -229,15 +250,23 @@ async function searchImages(term, page = 1) {
     const ambiguous = wk.found && lists[2].some((i) => fold(i.name) !== t0 && fold(i.name).startsWith(t0 + ' ') && /\(.+\)$/.test(i.name));
     if (tr.en) q.push({ words: words(tr.en), text: fold(tr.en), weight: ambiguous ? Math.min(tr.trust, 0.6) : tr.trust });
     const seenId = new Set(), seenKey = new Set(), ranked = [];
-    const lead = page === 1 && wk.lead && !ambiguous ? [[wk.lead]] : [];   // ambíguo: o artigo exato pode ser o sentido errado
+    // Imagem que vai na frente: a do artigo exato; se o termo é ambíguo, a do artigo que combina com a categoria
+    // (ex.: "Brigadeiro (doce)" numa lista de Comida), e nenhuma se não der para saber.
+    // Só artigos no formato "Termo (sentido)" contam como outro sentido do termo; "Batman v Superman" não.
+    const sameTerm = (i) => fold(i.name) === t0 || (fold(i.name).startsWith(t0 + ' ') && fold(i.name.replace(/\s*\([^)]*\)$/, '')) === t0);
+    const ctxArticle = ctx && (ambiguous || !wk.lead) && lists[2].find((i) => sameTerm(i) && inContext(i, ctx));
+    let leadItem = null;
+    if (ctxArticle) leadItem = { ...ctxArticle, lead: true };      // ambíguo: o sentido que combina com a categoria da lista
+    else if (wk.lead && !ambiguous) leadItem = wk.lead;              // artigo exato, sem ambiguidade
+    const lead = page === 1 && leadItem ? [[leadItem]] : [];
     for (const list of [...lead, ...lists, ...trLists]) {
       list.forEach((item, rank) => {
-        if (!item.thumb || !okThumb(item.thumb)) return;
+        if (!item.thumb || !okThumb(item.thumb) || isAdult(item)) return;
         if (item.w && item.h && Math.min(item.w, item.h) < 150) return;
         const k = dupKey(item), f = fileKey(item.thumb);
         if (seenId.has(item.id) || seenKey.has(k) || (f && seenKey.has(f))) return;
         seenId.add(item.id); seenKey.add(k); if (f) seenKey.add(f);
-        ranked.push({ item, s: score(item, rank, q) });
+        ranked.push({ item, s: score(item, rank, q, ctx) });
       });
     }
     ranked.sort((a, b) => b.s - a.s);
