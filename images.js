@@ -1,12 +1,17 @@
-// Busca de imagens livres: Openverse, Wikimedia Commons e (com PEXELS_API_KEY) Pexels.
-// Todas as fontes são consultadas em paralelo, com o termo original e a tradução para inglês;
-// os resultados são pontuados por relevância e qualidade, sem repetidos, e paginados.
+// Busca de imagens livres: Wikipédia, Openverse, Wikimedia Commons e (com PEXELS_API_KEY) Pexels.
+// 1) A Wikipédia em português "entende" o termo: acha o artigo (coxinha, Messi, cachorro → Cão),
+//    dá a imagem principal dele (vem primeiro) e o título do artigo em inglês, que é a tradução usada.
+//    O tradutor automático só entra quando não há artigo (ele erra nomes próprios: "brigadeiro" → "dock").
+// 2) Todas as fontes rodam em paralelo com o termo original e a tradução.
+// 3) Os resultados são pontuados por relevância e qualidade, sem repetidos, e paginados.
 const OPENVERSE = process.env.OPENVERSE_URL || 'https://api.openverse.org/v1/images/';
 const COMMONS = process.env.COMMONS_URL || 'https://commons.wikimedia.org/w/api.php';
 const TRANSLATE = process.env.TRANSLATE_URL || 'https://api.mymemory.translated.net/get';
 const PEXELS = process.env.PEXELS_URL || 'https://api.pexels.com/v1/search';
 const PEXELS_KEY = process.env.PEXELS_API_KEY || '';
-const UA = 'escalacao-games/1.0 (projeto pessoal; busca de imagens livres)';
+const WIKI = process.env.WIKI_URL || 'https://pt.wikipedia.org/w/api.php';
+// A Wikimedia pede um User-Agent com contato; sem ele, as buscas podem ser bloqueadas.
+const UA = process.env.IMG_USER_AGENT || 'escalacao-games/1.0 (https://github.com/ManoTeixas/Tierlistmaker)';
 const PER_SOURCE = 20, PAGE_SIZE = 40, MAX_PAGE = 10;
 
 const ALLOWED_HOSTS = ['openverse.org', 'wikimedia.org', 'pexels.com'];
@@ -25,9 +30,13 @@ async function cached(key, ttl, load) {
 }
 
 async function getJson(url, headers = {}, ms = 8000) {
-  const r = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json', ...headers }, signal: AbortSignal.timeout(ms) });
-  if (!r.ok) throw new Error('Serviço de imagens respondeu ' + r.status);
-  return r.json();
+  for (let attempt = 0; ; attempt++) {
+    const r = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json', ...headers }, signal: AbortSignal.timeout(ms) });
+    if (r.ok) return r.json();
+    // limite de requisições ou instabilidade: tenta mais uma vez, rapidinho
+    if (attempt === 0 && (r.status === 429 || r.status >= 500)) { await new Promise((res) => setTimeout(res, 400)); continue; }
+    throw new Error('respondeu ' + r.status);
+  }
 }
 
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -40,9 +49,60 @@ const DICT = {
   paisagem: 'landscape', musica: 'music', arquitetura: 'architecture', cachorro: 'dog', gato: 'cat', cidade: 'city', montanha: 'mountain',
   flores: 'flowers', flor: 'flower', mar: 'sea', ceu: 'sky', floresta: 'forest', frutas: 'fruits', pizza: 'pizza', bolo: 'cake',
 };
-async function toEnglish(term) {
+// Artigo da Wikipédia com exatamente esse nome (seguindo redirecionamentos: "cachorro" → "Cão").
+async function wikiLookup(term) {
+  try {
+    return await cached('wk:' + fold(term), 24 * 3600e3, async () => {
+      const d = await getJson(WIKI + '?' + new URLSearchParams({
+        action: 'query', titles: term, redirects: '1', prop: 'langlinks|pageimages|pageprops', lllang: 'en',
+        piprop: 'thumbnail|name|original', pithumbsize: '480', pilicense: 'free', ppprop: 'disambiguation', format: 'json', formatversion: '2',
+      }), {}, 3000);
+      const p = ((d.query && d.query.pages) || [])[0];
+      if (!p || p.missing || p.invalid || (p.pageprops && p.pageprops.disambiguation !== undefined)) return { found: false };
+      const en = p.langlinks && p.langlinks[0] && p.langlinks[0].title;
+      return { found: true, title: p.title, en: en ? en.replace(/\s*\([^)]*\)\s*$/, '') : null, lead: p.thumbnail && p.pageimage ? wikiItem(p, 'wl') : null };
+    });
+  } catch (e) {
+    console.error('imagens: wikipédia', e.message);
+    return { found: false };
+  }
+}
+function wikiItem(p, kind) {
+  return {
+    id: kind + ':' + p.pageimage, src: 'wp', lead: kind === 'wl',
+    name: String(p.title).slice(0, 60),
+    thumb: p.thumbnail.source,
+    author: '', license: 'Livre (Wikipédia)',
+    page: 'https://commons.wikimedia.org/wiki/File:' + encodeURIComponent(p.pageimage),
+    w: (p.original && p.original.width) || 0, h: (p.original && p.original.height) || 0,
+    tags: p.description || '',
+  };
+}
+// Imagens principais dos artigos que a busca da Wikipédia encontra (ex.: "brigadeiro" → Brigadeiro (doce)).
+async function wikiSearch(q, page) {
+  if (page > 1) return { items: [], more: false };
+  const d = await getJson(WIKI + '?' + new URLSearchParams({
+    action: 'query', generator: 'search', gsrsearch: q, gsrlimit: '12', prop: 'pageimages|description',
+    piprop: 'thumbnail|name|original', pithumbsize: '480', pilicense: 'free', format: 'json', formatversion: '2',
+  }));
+  const items = ((d.query && d.query.pages) || []).sort((a, b) => (a.index || 0) - (b.index || 0)).filter((p) => p.thumbnail && p.pageimage).map((p) => wikiItem(p, 'wp'));
+  return { items, more: false };
+}
+
+// Tradução: título do artigo em inglês > dicionário > tradutor automático (só se não houver artigo).
+// "trust": quanto confiar nos resultados da tradução em relação aos do termo original.
+async function translate(term, wk) {
   const key = fold(term);
-  if (DICT[key]) return DICT[key];
+  if (wk.found) {
+    if (wk.en && fold(wk.en) !== key) return { en: wk.en, trust: 1.15 };
+    return DICT[key] ? { en: DICT[key], trust: 1.15 } : { en: null };   // artigo sem tradução diferente: é nome próprio, não traduz
+  }
+  if (DICT[key]) return { en: DICT[key], trust: 1.15 };
+  const t = await machineTranslate(term);
+  return t ? { en: t, trust: 0.6 } : { en: null };
+}
+async function machineTranslate(term) {
+  const key = fold(term);
   try {
     const d = await cached('tr:' + key, 24 * 3600e3, () => getJson(TRANSLATE + '?' + new URLSearchParams({ q: term, langpair: 'pt|en' }), {}, 2500));
     const t = String((d.responseData && d.responseData.translatedText) || '').trim().toLowerCase();
@@ -111,16 +171,20 @@ const JUNK_NAME = /^(img|dsc|dscn|dscf|pict?|p|image|photo|file|screenshot|untit
 const OFF_TOPIC = /\b(map|mapa|diagram|chart|graph|logo|flag|bandeira|coat of arms|brasao|plan|planta|scan|document|stamp|selo|signature|assinatura)\b/;
 
 // Pontua relevância (palavras no título e nas etiquetas) e qualidade (tamanho, proporção, nome).
-function score(item, rank, qWords, qText) {
+// q = [{ words, text, weight }] para o termo original, o título do artigo e a tradução.
+function score(item, rank, q) {
   const name = fold(item.name), tags = fold(item.tags);
   let s = 0;
-  for (const set of qWords) {
+  for (const { words: set, text, weight } of q) {
     if (!set.length) continue;
     const inName = set.filter((w) => name.includes(w)).length / set.length;
     const inTags = set.filter((w) => tags.includes(w)).length / set.length;
-    s = Math.max(s, inName * 3 + inTags * 1.5);
+    s = Math.max(s, (inName * 3 + inTags * 1.5 + (text && name.includes(text) ? 1 : 0)) * weight);
   }
-  if (qText.some((t) => t && name.includes(t))) s += 1;
+  if (s === 0) s -= 1.5;   // não tem nenhuma palavra da busca
+  if (item.src === 'wp' && q.some(({ words: set }) => set.length && set.every((w) => name.includes(w)))) s += 1.5;   // artigo sobre o assunto
+  if (item.lead) s += 6;   // imagem principal do artigo exato: é "a" foto daquilo
+  const qText = q.map((x) => x.text);
   const { w, h } = item;
   if (w && h) {
     const side = Math.min(w, h), ratio = Math.max(w, h) / side;
@@ -129,11 +193,13 @@ function score(item, rank, qWords, qText) {
   }
   if (JUNK_NAME.test(item.name.trim()) || !/[a-z]{3}/i.test(item.name)) s -= 1;
   if (OFF_TOPIC.test(name) && !qText.some((t) => OFF_TOPIC.test(t))) s -= 2;
-  s += { px: 1, ov: 0, wc: -0.3 }[item.src] || 0;
+  s += { px: 1, wp: 0.5, ov: 0, wc: -0.3 }[item.src] || 0;
   return s - rank * 0.04;   // a ordem da própria fonte desempata
 }
 
 const dupKey = (i) => fold(i.name) + '|' + fold(i.author);
+// Mesma imagem da Wikimedia vinda por caminhos diferentes (artigo da Wikipédia e busca do Commons).
+const fileKey = (u) => { const m = /upload\.wikimedia\.org\/.+?\/(?:thumb\/)?[0-9a-f]\/[0-9a-f]{2}\/([^/]+)/.exec(u); return m ? decodeURIComponent(m[1]).toLowerCase() : null; };
 
 async function searchImages(term, page = 1) {
   page = Math.min(Math.max(1, Math.floor(Number(page)) || 1), MAX_PAGE);
@@ -141,25 +207,37 @@ async function searchImages(term, page = 1) {
     let calls = 0, failures = 0, more = false;
     const run = async (fn, q) => {
       calls++;
-      try { const r = await fn(q, page); more = more || r.more; return r.items; } catch (_) { failures++; return []; }
+      try { const r = await fn(q, page); more = more || r.more; return r.items; }
+      catch (e) { failures++; console.error('imagens:', fn.name, JSON.stringify(q), e.message); return []; }
     };
-    // O termo original já sai para todas as fontes enquanto a tradução é feita.
-    const original = [run(openverse, term), run(commons, term)];
+    // O termo original já sai para todas as fontes enquanto a Wikipédia decide a tradução.
+    const original = [run(openverse, term), run(commons, term), run(wikiSearch, term)];
     if (PEXELS_KEY) original.push(run(pexels, term));
-    const translated = toEnglish(term).then((en) => (en ? Promise.all([run(openverse, en), run(commons, en)]).then((l) => ({ en, l })) : { en: null, l: [] }));
-    const [lists, tr] = await Promise.all([Promise.all(original), translated]);
+    const understood = wikiLookup(term).then(async (wk) => {
+      const tr = await translate(term, wk);
+      const l = tr.en ? await Promise.all([run(openverse, tr.en), run(commons, tr.en)]) : [];
+      return { wk, tr, l };
+    });
+    const [lists, { wk, tr, l: trLists }] = await Promise.all([Promise.all(original), understood]);
     if (calls && failures === calls) throw new Error('Os serviços de imagens não responderam.');
 
-    const qWords = [words(term), words(tr.en)], qText = [fold(term), fold(tr.en)];
+    const q = [{ words: words(term), text: fold(term), weight: 1 }];
+    if (wk.found && fold(wk.title) !== fold(term)) q.push({ words: words(wk.title), text: fold(wk.title), weight: 1 });   // "messi" → "Lionel Messi"
+    // Termo ambíguo: a busca da Wikipédia achou artigos como "Brigadeiro (doce)" além do "Brigadeiro" (posto militar).
+    // Aí o artigo exato pode ser o sentido errado: a tradução dele vale menos e a imagem dele não entra na frente.
+    const t0 = fold(wk.found ? wk.title : term);
+    const ambiguous = wk.found && lists[2].some((i) => fold(i.name) !== t0 && fold(i.name).startsWith(t0 + ' ') && /\(.+\)$/.test(i.name));
+    if (tr.en) q.push({ words: words(tr.en), text: fold(tr.en), weight: ambiguous ? Math.min(tr.trust, 0.6) : tr.trust });
     const seenId = new Set(), seenKey = new Set(), ranked = [];
-    for (const list of [...lists, ...tr.l]) {
+    const lead = page === 1 && wk.lead && !ambiguous ? [[wk.lead]] : [];   // ambíguo: o artigo exato pode ser o sentido errado
+    for (const list of [...lead, ...lists, ...trLists]) {
       list.forEach((item, rank) => {
         if (!item.thumb || !okThumb(item.thumb)) return;
         if (item.w && item.h && Math.min(item.w, item.h) < 150) return;
-        const k = dupKey(item);
-        if (seenId.has(item.id) || seenKey.has(k)) return;
-        seenId.add(item.id); seenKey.add(k);
-        ranked.push({ item, s: score(item, rank, qWords, qText) });
+        const k = dupKey(item), f = fileKey(item.thumb);
+        if (seenId.has(item.id) || seenKey.has(k) || (f && seenKey.has(f))) return;
+        seenId.add(item.id); seenKey.add(k); if (f) seenKey.add(f);
+        ranked.push({ item, s: score(item, rank, q) });
       });
     }
     ranked.sort((a, b) => b.s - a.s);

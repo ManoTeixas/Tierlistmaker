@@ -13,6 +13,7 @@ function fakeNet(t, routes, calls = []) {
   t.mock.method(global, 'fetch', async (url) => {
     const u = new URL(url); calls.push(u);
     for (const [host, fn] of routes) if (u.host.includes(host)) return json(fn(u));
+    if (u.host.includes('wikipedia')) return json({ query: { pages: u.searchParams.get('titles') ? [{ missing: true }] : [] } });   // sem artigo
     throw new Error('host inesperado ' + u.host);
   });
   return calls;
@@ -96,4 +97,47 @@ test('falha parcial não fica no cache; falha total vira erro', async (t) => {
 
   t.mock.method(global, 'fetch', async () => { throw new Error('sem rede'); });
   await assert.rejects(loadImages().searchImages('zz5 qualquer'), /não responderam/);
+});
+
+const wikiPage = (title, file, extra = {}) => ({ title, pageimage: file, thumbnail: { source: `https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/${file}/480px-${file}` }, original: { width: 2000, height: 1500 }, ...extra });
+
+test('artigo da Wikipédia: imagem principal vem primeiro e nome próprio não passa pelo tradutor', async (t) => {
+  const calls = fakeNet(t, [
+    ['wikipedia', (u) => (u.searchParams.get('titles')
+      ? { query: { pages: [wikiPage('Coxinha', 'Coxinha_01.jpg', { langlinks: [{ lang: 'en', title: 'Coxinha' }] })] } }
+      : { query: { pages: [] } })],
+    ['openverse', () => ({ page_count: 1, results: [ov('c1', 'Coxinha frita'), ov('c2', 'Chicken thigh')] })],
+    ['wikimedia', () => ({ query: { pages: [] } })],
+  ]);
+  const r = await loadImages().searchImages('coxinha');
+  assert.equal(r.items[0].id, 'wl:Coxinha_01.jpg');
+  assert.ok(!calls.some((u) => u.host.includes('mymemory')), 'não chama o tradutor automático');
+  assert.ok(calls.every((u) => !u.host.includes('openverse') || u.searchParams.get('q') === 'coxinha'), 'não busca tradução');
+});
+
+test('tradução vem do título do artigo em inglês', async (t) => {
+  const calls = fakeNet(t, [
+    ['wikipedia', (u) => (u.searchParams.get('titles')
+      ? { query: { pages: [wikiPage('Automóvel desportivo', 'Mx5.jpg', { langlinks: [{ lang: 'en', title: 'Sports car (vehicle)' }] })] } }
+      : { query: { pages: [] } })],
+    ['openverse', () => ({ page_count: 1, results: [] })],
+    ['wikimedia', () => ({ query: { pages: [] } })],
+  ]);
+  await loadImages().searchImages('carro esportivo zz6');
+  assert.ok(calls.some((u) => u.host.includes('openverse') && u.searchParams.get('q') === 'Sports car'));
+  assert.ok(!calls.some((u) => u.host.includes('mymemory')));
+});
+
+test('termo ambíguo: o sentido certo achado na busca não perde para a tradução do artigo exato', async (t) => {
+  fakeNet(t, [
+    ['wikipedia', (u) => (u.searchParams.get('titles')
+      ? { query: { pages: [wikiPage('Brigadeiro', 'Rank.jpg', { langlinks: [{ lang: 'en', title: 'Brigadier' }] })] } }
+      : { query: { pages: [wikiPage('Brigadeiro (doce)', 'Doce.jpg')] } })],
+    ['openverse', (u) => ({ page_count: 1, results: u.searchParams.get('q') === 'Brigadier' ? [ov('g1', 'Brigadier General Smith')] : [ov('b1', 'Brigadeiros na festa')] })],
+    ['wikimedia', () => ({ query: { pages: [] } })],
+  ]);
+  const ids = (await loadImages().searchImages('brigadeiro')).items.map((i) => i.id);
+  assert.equal(ids[0], 'wp:Doce.jpg');
+  assert.ok(ids.indexOf('ov:b1') < ids.indexOf('ov:g1'));
+  assert.ok(!ids.includes('wl:Rank.jpg'), 'imagem do artigo exato não entra na frente');
 });
