@@ -543,8 +543,8 @@
 <div id="player" class="hide" role="region" aria-label="Player"><span id="plName"></span><div id="plBody"></div><button class="btn" type="button" id="plClose" aria-label="Fechar player">×</button></div>
 
 <main class="app" id="app" data-mode="futebol">
-  <aside class="bench" aria-label="Técnico e reservas">
-    <section><h2 id="coachHead">Técnico</h2><div class="list" id="coach"></div></section>
+  <aside class="bench" aria-label="Técnico e reservas ou menções honrosas">
+    <section id="coachSec"><h2 id="coachHead">Técnico</h2><div class="list" id="coach"></div></section>
     <section><h2 id="benchHead">Reservas</h2><div class="list" id="reserves"></div></section>
   </aside>
 
@@ -641,19 +641,19 @@ const ROLE_LABELS = {
   ATA: { 1: ["Centroavante"], 2: ["Atacante", "Atacante"], 3: ["Ponta E", "Centroavante", "Ponta D"] },
 };
 const CATS = ["Favorito do gênero", "Melhor enredo", "Melhor direção de arte", "Superestimado", "Subestimado", "Melhor sequência de ação", "Melhor trilha sonora", "Elenco favorito", "Antigo e muito bom", "Todo mundo devia jogar", "Melhor combate"];
-// Conjuntos de nomes das vagas. "themed": temas fora do futebol, com destaque e menções honrosas no lugar de técnico e reservas.
-const theme = (name, title, labels, coach, bench) => ({ name, title, themed: true, field: (s) => labels[s.i] || `Vaga ${s.i + 1}`, coach, bench,
-  coachHead: "Destaque", benchHead: "Menções honrosas" });
+// Conjuntos de nomes das vagas. "themed": temas fora do futebol, só com menções honrosas no lugar dos reservas (sem técnico).
+const theme = (name, title, labels, bench) => ({ name, title, themed: true, field: (s) => labels[s.i] || `Vaga ${s.i + 1}`, bench,
+  benchHead: "Menções honrosas" });
 const TEMPLATES = {
   posicoes: { name: "Futebol: posições", title: "Minha escalação de futebol", field: (s) => s.pos, coach: "Técnico", bench: "Reserva", coachHead: "Técnico", benchHead: "Reservas", formation: "f433" },
-  categorias: Object.assign(theme("Jogos: categorias", "Meus jogos favoritos", CATS, "Jogo da vida", "Menção honrosa"), { formation: "cat" }),
-  filmes: Object.assign(theme("Filmes: premiações", "Meus filmes favoritos", ["Melhor roteiro", "Melhor direção", "Melhor fotografia", "Melhor trilha sonora", "Melhor atuação", "Melhor vilão", "Melhor final", "Melhor cena de ação", "Melhor comédia", "Mais subestimado", "Mais superestimado"], "Filme da vida", "Menção honrosa"), { formation: "cat" }),
-  series: Object.assign(theme("Séries: premiações", "Minhas séries favoritas", ["Melhor roteiro", "Melhor temporada", "Melhor protagonista", "Melhor vilão", "Melhor abertura", "Melhor trilha sonora", "Melhor final", "Melhor plot twist", "Mais viciante", "Mais subestimada", "Mais superestimada"], "Série da vida", "Menção honrosa"), { formation: "cat" }),
-  animes: Object.assign(theme("Animes: premiações", "Meus animes favoritos", ["Melhor história", "Melhor protagonista", "Melhor vilão", "Melhor luta", "Melhor abertura", "Melhor trilha sonora", "Melhor animação", "Melhor final", "Melhor personagem secundário", "Mais emocionante", "Mais subestimado"], "Anime da vida", "Menção honrosa"), { formation: "cat" }),
-  musicas: Object.assign(theme("Músicas: premiações", "Minhas músicas favoritas", ["Melhor letra", "Melhor refrão", "Melhor solo", "Melhor batida", "Melhor álbum", "Melhor clipe", "Para treinar", "Para chorar", "Para festa", "Mais subestimada", "Mais superestimada"], "Música da vida", "Menção honrosa"), { formation: "cat" }),
-  livros: Object.assign(theme("Livros: premiações", "Meus livros favoritos", ["Melhor enredo", "Melhor personagem", "Melhor vilão", "Melhor começo", "Melhor final", "Melhor plot twist", "Mais emocionante", "Mais triste", "Leitura leve", "Mais subestimado", "Mais superestimado"], "Livro da vida", "Menção honrosa"), { formation: "cat" }),
-  comida: Object.assign(theme("Comida: premiações", "Minhas comidas favoritas", ["Melhor entrada", "Melhor prato principal", "Melhor sobremesa", "Melhor lanche", "Melhor pizza", "Melhor doce", "Melhor comida de rua", "Melhor café da manhã", "Melhor de madrugada", "Mais subestimada", "Mais superestimada"], "Prato da vida", "Menção honrosa"), { formation: "cat" }),
-  livre: Object.assign(theme("Livre: Vaga 1, 2, 3…", "Minha escalação", [], "Destaque", "Reserva"), { formation: "cat" }),
+  categorias: Object.assign(theme("Jogos: categorias", "Meus jogos favoritos", CATS, "Menção honrosa"), { formation: "cat" }),
+  filmes: Object.assign(theme("Filmes: premiações", "Meus filmes favoritos", ["Melhor roteiro", "Melhor direção", "Melhor fotografia", "Melhor trilha sonora", "Melhor atuação", "Melhor vilão", "Melhor final", "Melhor cena de ação", "Melhor comédia", "Mais subestimado", "Mais superestimado"], "Menção honrosa"), { formation: "cat" }),
+  series: Object.assign(theme("Séries: premiações", "Minhas séries favoritas", ["Melhor roteiro", "Melhor temporada", "Melhor protagonista", "Melhor vilão", "Melhor abertura", "Melhor trilha sonora", "Melhor final", "Melhor plot twist", "Mais viciante", "Mais subestimada", "Mais superestimada"], "Menção honrosa"), { formation: "cat" }),
+  animes: Object.assign(theme("Animes: premiações", "Meus animes favoritos", ["Melhor história", "Melhor protagonista", "Melhor vilão", "Melhor luta", "Melhor abertura", "Melhor trilha sonora", "Melhor animação", "Melhor final", "Melhor personagem secundário", "Mais emocionante", "Mais subestimado"], "Menção honrosa"), { formation: "cat" }),
+  musicas: Object.assign(theme("Músicas: premiações", "Minhas músicas favoritas", ["Melhor letra", "Melhor refrão", "Melhor solo", "Melhor batida", "Melhor álbum", "Melhor clipe", "Para treinar", "Para chorar", "Para festa", "Mais subestimada", "Mais superestimada"], "Menção honrosa"), { formation: "cat" }),
+  livros: Object.assign(theme("Livros: premiações", "Meus livros favoritos", ["Melhor enredo", "Melhor personagem", "Melhor vilão", "Melhor começo", "Melhor final", "Melhor plot twist", "Mais emocionante", "Mais triste", "Leitura leve", "Mais subestimado", "Mais superestimado"], "Menção honrosa"), { formation: "cat" }),
+  comida: Object.assign(theme("Comida: premiações", "Minhas comidas favoritas", ["Melhor entrada", "Melhor prato principal", "Melhor sobremesa", "Melhor lanche", "Melhor pizza", "Melhor doce", "Melhor comida de rua", "Melhor café da manhã", "Melhor de madrugada", "Mais subestimada", "Mais superestimada"], "Menção honrosa"), { formation: "cat" }),
+  livre: Object.assign(theme("Livre: Vaga 1, 2, 3…", "Minha escalação", [], "Reserva"), { formation: "cat" }),
   numeros: { name: "Jogador 1, 2, 3…", title: "Minha escalação", field: (s) => `Jogador ${s.i + 1}`, coach: "Técnico", bench: "Reserva", coachHead: "Técnico", benchHead: "Reservas", formation: "f433" },
 };
 // Categorias: organizam tudo (tierlists, escalações e qualquer formato novo). "sources": de onde vêm os itens na aba Buscar.
@@ -672,6 +672,10 @@ const LINEUP_CAT = { posicoes: "futebol", numeros: "futebol", categorias: "jogos
 const LINEUP_ORDER = ["posicoes", "categorias", "filmes", "series", "animes", "musicas", "livros", "comida", "livre"];
 const KEYS = [...Array.from({ length: 11 }, (_, i) => "f" + i), "c", ...Array.from({ length: 7 }, (_, i) => "b" + i)];
 const isField = (k) => k[0] === "f";
+const hasCoach = (tpl) => !TEMPLATES[tpl].themed;   // a vaga "c" (técnico) só existe no futebol
+const keysOf = (d) => (hasCoach(d.template) ? KEYS : KEYS.filter((k) => k !== "c"));
+// lista com tema que tinha algo na antiga vaga de destaque: o item vai para "Sem posição", não se perde
+function dropCoach(d) { if (!hasCoach(d.template) && d.slots.c) { d.pool.push(d.slots.c); delete d.slots.c; } }
 const MODES = ["futebol", "tier", "bracket"];
 const TIER_COLORS = ["#ff7f7f", "#ffbf7f", "#ffdf7f", "#ffff7f", "#bfff7f", "#7fff7f", "#7fffff", "#7fbfff", "#bf7fff", "#ff7fff"];
 
@@ -733,6 +737,7 @@ function fixProj(p) {
     d.pool = (d.pool || []).map(asText);
   }
   const cat = CATEGORIES.some((k) => k.id === p.cat) ? p.cat : mode === "tier" || mode === "bracket" ? "outros" : (LINEUP_CAT[d.template] || "outros");
+  if (mode === "futebol") dropCoach(d);
   return { id: p.id || "p" + uidn(), mode, cat, updated: p.updated || Date.now(), data: d };
 }
 const hasContent = (mode, d) => (mode === "bracket" ? d.entries.some(Boolean) : mode === "tier" ? d.pool.length > 0 || d.tiers.some((t) => t.items.length) : Object.keys(d.slots).length > 0 || d.pool.length > 0);
@@ -811,10 +816,10 @@ const usedCount = (id) => { let n = 0; eachItem((g) => { if (g.id === id) n++; }
 
 function benchDefault(key) { const t = TEMPLATES[M().template]; return key === "c" ? t.coach : `${t.bench} ${Number(key.slice(1)) + 1}`; }
 function labelFor(key) { const o = M().labels[M().template]; return (o && o[key]) || DEFAULTS[key]; }
-const emptyKeys = () => KEYS.filter((k) => !M().slots[k]);
+const emptyKeys = () => keysOf(M()).filter((k) => !M().slots[k]);
 function nextEmpty(after) {
-  const start = KEYS.indexOf(after);
-  for (let n = 1; n <= KEYS.length; n++) { const k = KEYS[(start + n) % KEYS.length]; if (!M().slots[k]) return k; }
+  const keys = keysOf(M()), start = keys.indexOf(after);
+  for (let n = 1; n <= keys.length; n++) { const k = keys[(start + n) % keys.length]; if (!M().slots[k]) return k; }
   return null;
 }
 const posOf = (key) => M().pos[key] || { x: LAY[key].x, y: LAY[key].y };
@@ -853,7 +858,9 @@ function renderPitch() {
     const p = posOf(s.key);
     return slotHTML(s.key, false, `--x:${p.x}%;--y:${p.y}%;--tw:min(150px, calc(100cqw / ${s.n + 1} - 6px))`);
   }).join("");
-  $("#coach").innerHTML = slotHTML("c", true);
+  const coach = hasCoach(M().template);
+  $("#coach").innerHTML = coach ? slotHTML("c", true) : "";
+  $("#coachSec").classList.toggle("hide", !coach);
   $("#reserves").innerHTML = KEYS.filter((k) => k[0] === "b").map((k) => slotHTML(k, true)).join("");
   $("#fpool").innerHTML = M().pool.map((g, j) => tileHTML(g, "pool", j)).join("");
 }
@@ -982,7 +989,7 @@ function renderChrome() {
   $("#modeChip").textContent = MODE_NAME[S.mode];
   setSaveState(S.projects.includes(S.cur) ? savedText() : "Ainda não salvo", false);
   $("#title").value = M().title;
-  if (isPitch()) { const t = TEMPLATES[M().template]; $("#coachHead").textContent = t.coachHead; $("#benchHead").textContent = t.benchHead; }
+  if (isPitch()) { const t = TEMPLATES[M().template]; if (t.coachHead) $("#coachHead").textContent = t.coachHead; $("#benchHead").textContent = t.benchHead; }
   $("#ctlPitch").classList.toggle("hide", !isPitch());
   $("#ctlTier").classList.toggle("hide", !isTier());
   $("#ctlBr").classList.toggle("hide", !isBr());
@@ -1159,7 +1166,7 @@ function projInfo(p) {
   const d = p.data;
   if (p.mode === "bracket") return `${d.entries.filter(Boolean).length} de ${d.size} times${d.picks[`${Math.log2(d.size) - 1}-0`] !== undefined ? " · campeão definido" : ""}`;
   if (p.mode === "tier") { const n = d.pool.length + d.tiers.reduce((s, t) => s + t.items.length, 0); return `${n} ${n === 1 ? "item" : "itens"} em ${d.tiers.length} tiers`; }
-  return `${Object.keys(d.slots).length} de 19 vagas preenchidas${d.pool.length ? ` · ${d.pool.length} sem posição` : ""}`;
+  return `${Object.keys(d.slots).length} de ${keysOf(d).length} vagas preenchidas${d.pool.length ? ` · ${d.pool.length} sem posição` : ""}`;
 }
 // Formatos de ranking. Para criar outro formato (bracket, top 10…), acrescente um item aqui:
 // "cards" devolve os modelos da categoria e os cliques em data-tpl / data-ltpl abrem o editor.
@@ -1185,7 +1192,7 @@ const FORMATS = [
       const strip = labs.slice(0, 6).map((n) => `<span style="background:hsl(${hueOf(t.name + n)},65%,72%)">${esc(n.replace(/^(Melhor|Mais|Para)\s+/i, "")[0].toUpperCase())}</span>`).join("");
       return `<button class="tcard" type="button" data-ltpl="${key}">
       <div class="tstrip">${strip}</div>
-      <div class="body"><h3>${esc(t.name)}</h3><span class="meta">11 vagas · ${esc(t.coachHead.toLowerCase())} e ${esc(t.benchHead.toLowerCase())}</span><span class="sample">${esc(labs.slice(0, 4).join(", "))}…</span></div></button>`;
+      <div class="body"><h3>${esc(t.name)}</h3><span class="meta">11 vagas · ${t.coachHead ? esc(t.coachHead.toLowerCase()) + " e " : ""}${esc(t.benchHead.toLowerCase())}</span><span class="sample">${esc(labs.slice(0, 4).join(", "))}…</span></div></button>`;
     }).join("") },
 ];
 const catOf = (id) => CATEGORIES.find((k) => k.id === id) || CATEGORIES[CATEGORIES.length - 1];
@@ -1734,7 +1741,7 @@ document.addEventListener("dragend", clearOver);
 $("#formation").innerHTML = Object.entries(FORMATIONS).map(([k, f]) => `<option value="${k}">${esc(f.name)}</option>`).join("");
 $("#template").innerHTML = Object.entries(TEMPLATES).map(([k, t]) => `<option value="${k}">${esc(t.name)}</option>`).join("");
 $("#formation").addEventListener("change", (e) => { M().formation = e.target.value; M().pos = {}; save(); renderAll(); });
-$("#template").addEventListener("change", (e) => { M().template = e.target.value; save(); renderAll(); });
+$("#template").addEventListener("change", (e) => { M().template = e.target.value; dropCoach(M()); if (sel === "c" && !hasCoach(M().template)) sel = null; save(); renderAll(); });
 $("#btnResetPos").addEventListener("click", () => { M().pos = {}; save(); renderAll(); });
 $("#title").addEventListener("input", (e) => { M().title = e.target.value; save(); });
 $("#showNames").addEventListener("change", (e) => { M().names = e.target.checked; save(); renderAll(); });
@@ -1908,10 +1915,11 @@ async function drawPitch() {
   };
   x.textBaseline = "alphabetic";
   x.fillStyle = "#c0b6a5"; x.font = '700 28px "Barlow Condensed", sans-serif';
-  x.fillText(TEMPLATES[M().template].coachHead.toUpperCase(), RX, 168); side("c", 232);
+  const T = TEMPLATES[M().template], top = T.coachHead ? 336 : 168;
+  if (T.coachHead) { x.fillText(T.coachHead.toUpperCase(), RX, 168); side("c", 232); }
   x.fillStyle = "#c0b6a5"; x.font = '700 28px "Barlow Condensed", sans-serif';
-  x.fillText(TEMPLATES[M().template].benchHead.toUpperCase(), RX, 336);
-  for (let j = 0; j < 7; j++) side("b" + j, 396 + j * 118);
+  x.fillText(T.benchHead.toUpperCase(), RX, top);
+  for (let j = 0; j < 7; j++) side("b" + j, top + 60 + j * 118);
   return c;
 }
 

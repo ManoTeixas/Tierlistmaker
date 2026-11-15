@@ -18,7 +18,7 @@ O servidor serve o site, guarda as contas e a comunidade e faz a ponte com os ba
 
 ## Tela inicial
 
-- **Escalação:** escolha um tema. Futebol (posições), Jogos, Filmes, Séries, Animes, Músicas, Livros e Comida vêm com prêmios nas vagas (melhor roteiro, melhor trilha sonora…), mais um "destaque" e 7 menções honrosas; "Livre" traz só Vaga 1, 2, 3… Dá para trocar o conjunto de nomes no editor ("Nomes das vagas") e renomear qualquer vaga clicando nela. Use fotos, imagens ou elementos de texto.
+- **Escalação:** escolha um tema. Futebol (posições), Jogos, Filmes, Séries, Animes, Músicas, Livros e Comida vêm com prêmios nas vagas (melhor roteiro, melhor trilha sonora…) e 7 menções honrosas (o técnico existe só nas escalações de futebol); "Livre" traz só Vaga 1, 2, 3… Dá para trocar o conjunto de nomes no editor ("Nomes das vagas") e renomear qualquer vaga clicando nela. Use fotos, imagens ou elementos de texto.
 - **Tierlist:** escolha um modelo pronto ou comece do zero.
 - **Comunidade:** tierlists publicadas por outras pessoas.
 - **Minhas listas:** tudo o que você salvou. Abra, duplique ou exclua.
