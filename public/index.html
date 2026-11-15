@@ -317,6 +317,7 @@
   .igi.busy { opacity: .45; cursor: progress; }
   .igi .t { display: none; position: absolute; inset: auto 0 0 0; padding: 16px 5px 3px; font-size: 11px; line-height: 1.15; font-weight: 600; background: linear-gradient(transparent, rgba(0,0,0,.88)); pointer-events: none; overflow-wrap: anywhere; }
   .igi:hover .t, .igi:focus-visible .t { display: block; }
+  .igmore { grid-column: 1 / -1; justify-self: center; margin: 4px 0 8px; }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
 </style>
@@ -1253,7 +1254,7 @@ const SRC = {
   tmdb_tv: { name: () => (AV.tmdb ? "Séries (TMDB)" : "Séries (TVMaze)"), ph: "Buscar série", hint: () => (AV.tmdb ? "Esta aplicação usa a API do TMDB, mas não é endossada nem certificada por ele." : "Dados e pôsteres do TVMaze. As imagens pertencem aos respectivos donos.") },
   jikan: { name: () => "Animes (MyAnimeList)", ph: "Buscar anime", hint: "Dados do MyAnimeList, pela API Jikan. As imagens pertencem aos respectivos donos." },
   openlibrary: { name: () => "Livros (Open Library)", ph: "Buscar livro ou autor", hint: "Capas e dados da Open Library." },
-  web: { name: () => "Imagens da web", ph: "Buscar imagens (ex.: comida)", hint: "Imagens de bancos livres (Openverse e Wikimedia Commons). Passe o mouse para ver o nome; autor e licença ficam salvos em Fotos quando você usa a imagem." },
+  web: { name: () => "Imagens da web", ph: "Buscar imagens (ex.: comida)", hint: "Imagens de bancos livres (Openverse, Wikimedia Commons e, se configurado, Pexels). Role até o fim para ver mais. Passe o mouse para ver o nome; autor e licença ficam salvos em Fotos quando você usa a imagem." },
 };
 const srcText = (id, k) => { const v = SRC[id][k]; return typeof v === "function" ? v() : v; };
 function fillSrc() {   // fontes da categoria da lista aberta
@@ -1264,23 +1265,45 @@ function fillSrc() {   // fontes da categoria da lista aberta
   $("#qi").placeholder = srcText(S.src, "ph"); $("#srcHint").textContent = srcText(S.src, "hint");
   $("#chips").classList.toggle("hide", S.src !== "web");
 }
-function renderWeb(items, heading) {
-  webItems = items;
-  setStatus(items.length ? heading : "Nada encontrado. Tente outras palavras.", false, "imgs");
-  $("#imgGrid").innerHTML = items.map((w, i) => `<div class="igi" draggable="true" tabindex="0" role="button" data-i="${i}" title="${esc(w.name)}${w.sub ? " · " + esc(w.sub) : ""}${w.author ? " · " + esc(w.author) : ""}${w.license ? " · " + esc(w.license) : ""}" aria-label="Usar ${esc(w.name)}">
-      <img src="${esc(w.thumb)}" loading="lazy" alt="" draggable="false"><span class="t">${esc(w.name)}</span></div>`).join("");
+// Paginação: a busca de imagens da web traz mais resultados ao rolar até o fim (ou no botão "Mostrar mais").
+let webTerm = "", webPage = 1, webMore = false, webLoading = false;
+const igiHtml = (w, i) => `<div class="igi" draggable="true" tabindex="0" role="button" data-i="${i}" title="${esc(w.name)}${w.sub ? " · " + esc(w.sub) : ""}${w.author ? " · " + esc(w.author) : ""}${w.license ? " · " + esc(w.license) : ""}" aria-label="Usar ${esc(w.name)}">
+      <img src="${esc(w.thumb)}" loading="lazy" decoding="async" alt="" draggable="false"><span class="t">${esc(w.name)}</span></div>`;
+const moreBtn = () => (webMore ? `<button type="button" class="btn igmore" id="imgMore">${webLoading ? "Carregando…" : "Mostrar mais"}</button>` : "");
+function renderWeb(items, term, append) {
+  const seen = new Set(append ? webItems.map((w) => w.id) : []);
+  const fresh = items.filter((w) => !seen.has(w.id) && seen.add(w.id));
+  const start = append ? webItems.length : 0;
+  webItems = append ? webItems.concat(fresh) : fresh;
+  const n = webItems.length;
+  setStatus(n ? `${n} resultado${n === 1 ? "" : "s"} para “${term}”` : "Nada encontrado. Tente outras palavras.", false, "imgs");
+  const grid = $("#imgGrid"), old = $("#imgMore");
+  if (old) old.remove();
+  const html = fresh.map((w, k) => igiHtml(w, start + k)).join("") + moreBtn();
+  if (append) grid.insertAdjacentHTML("beforeend", html); else { grid.innerHTML = html; grid.scrollTop = 0; }
 }
-async function runImgSearch(term) {
-  if (ictl) ictl.abort();
-  ictl = new AbortController();
-  setStatus("Buscando…", false, "imgs");
+async function runImgSearch(term, page = 1) {
+  if (page === 1) { if (ictl) ictl.abort(); webTerm = term; webPage = 1; webMore = false; }
+  else if (webLoading || !webMore || term !== webTerm) return;
+  const ctl = page === 1 ? (ictl = new AbortController()) : ictl;
+  webLoading = true;
+  if (page === 1) setStatus("Buscando…", false, "imgs"); else { const b = $("#imgMore"); if (b) b.textContent = "Carregando…"; }
   try {
-    const r = await fetch("/api/search?source=" + encodeURIComponent(S.src) + "&q=" + encodeURIComponent(term), { signal: ictl.signal });
+    const r = await fetch("/api/search?source=" + encodeURIComponent(S.src) + "&q=" + encodeURIComponent(term) + (page > 1 ? "&page=" + page : ""), { signal: ctl.signal });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error || "Erro " + r.status);
-    renderWeb(j.items, `${j.items.length} resultado${j.items.length === 1 ? "" : "s"} para “${term}”`);
-  } catch (e) { if (e.name !== "AbortError") { webItems = []; $("#imgGrid").innerHTML = ""; setStatus(failMessage(e), true, "imgs"); } }
+    webPage = page; webMore = !!j.more; webLoading = false;
+    renderWeb(j.items || [], term, page > 1);
+  } catch (e) {
+    if (ctl !== ictl) return;   // uma busca nova já tomou o lugar desta
+    webLoading = false;
+    if (e.name === "AbortError") return;
+    if (page > 1) { const b = $("#imgMore"); if (b) b.textContent = "Tentar de novo"; setStatus(failMessage(e), true, "imgs"); return; }
+    webItems = []; $("#imgGrid").innerHTML = ""; setStatus(failMessage(e), true, "imgs");
+  }
 }
+const loadMoreImgs = () => { if (webMore && !webLoading && webTerm && webItems.length && $("#qi").value.trim() === webTerm) runImgSearch(webTerm, webPage + 1); };
+$("#imgGrid").addEventListener("scroll", (e) => { const g = e.currentTarget; if (g.scrollTop + g.clientHeight >= g.scrollHeight - 200) loadMoreImgs(); }, { passive: true });
 $("#qi").addEventListener("input", (e) => {
   clearTimeout(itimer);
   const v = e.target.value.trim();
@@ -1406,6 +1429,7 @@ document.addEventListener("click", (e) => {
   if (tab) { setTab(tab.dataset.tab); return; }
   const chip = t.closest("[data-chip]");
   if (chip) { $("#qi").value = chip.dataset.chip; runImgSearch(chip.dataset.chip); return; }
+  if (t.id === "imgMore") { loadMoreImgs(); return; }
   const igi = t.closest(".igi");
   if (igi) {
     if (igi.classList.contains("busy")) return;

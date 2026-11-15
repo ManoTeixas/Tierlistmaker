@@ -1,6 +1,6 @@
 // Servidor sem dependências (Node 18+).  Uso:  node server.js
 // Serve o site da pasta /public, contas e comunidade (auth.js, community.js)
-// e faz a busca de imagens livres (Openverse e Wikimedia Commons).
+// e faz a busca de imagens livres (images.js: Openverse, Wikimedia Commons e Pexels).
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -26,116 +26,16 @@ function sendJson(res, code, body) {
   res.end(JSON.stringify(body));
 }
 
-const OPENVERSE = process.env.OPENVERSE_URL || 'https://api.openverse.org/v1/images/';
-const COMMONS = process.env.COMMONS_URL || 'https://commons.wikimedia.org/w/api.php';
-const TRANSLATE = process.env.TRANSLATE_URL || 'https://api.mymemory.translated.net/get';
-const TTL = 10 * 60 * 1000;
-const jsonCache = new Map(); // chave -> { t, data }
-async function cachedJson(key, load) {
-  const hit = jsonCache.get(key);
-  if (hit && Date.now() - hit.t < TTL) return hit.data;
-  const data = await load();
-  jsonCache.set(key, { t: Date.now(), data });
-  if (jsonCache.size > 300) jsonCache.delete(jsonCache.keys().next().value);
-  return data;
-}
+const images = require('./images');
 const IMG_UA = 'escalacao-games/1.0 (projeto pessoal; busca de imagens livres)';
 // O proxy de imagens só fala com estes domínios (evita que o servidor seja usado para acessar qualquer endereço).
-const ALLOWED_HOSTS = ['openverse.org', 'wikimedia.org', 'steamstatic.com', 'scdn.co', 'tmdb.org', 'mzstatic.com', 'myanimelist.net', 'anilist.co', 'tvmaze.com', 'openlibrary.org', 'archive.org', ...(process.env.ALLOW_HOSTS || '').split(',').filter(Boolean)];
+const ALLOWED_HOSTS = [...images.ALLOWED_HOSTS, 'steamstatic.com', 'scdn.co', 'tmdb.org', 'mzstatic.com', 'myanimelist.net', 'anilist.co', 'tvmaze.com', 'openlibrary.org', 'archive.org', ...(process.env.ALLOW_HOSTS || '').split(',').filter(Boolean)];
 const hostOk = (h) => ALLOWED_HOSTS.some((a) => h === a || h.endsWith('.' + a));
 const proxied = (u) => '/imgproxy?u=' + encodeURIComponent(u);
 const MAX_IMG = 6 * 1024 * 1024;
-
-async function plainJson(url) {
-  const r = await fetch(url, { headers: { 'User-Agent': IMG_UA, Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
-  if (!r.ok) throw new Error('Serviço de imagens respondeu ' + r.status);
-  return r.json();
-}
-
-// A maioria dos bancos entende melhor inglês: traduz "comida" para "food" (se o serviço gratuito responder).
-async function toEnglish(term) {
-  try {
-    const d = await cachedJson('tr:' + term.toLowerCase(), async () => {
-      const qs = new URLSearchParams({ q: term, langpair: 'pt|en' });
-      const r = await fetch(TRANSLATE + '?' + qs, { headers: { 'User-Agent': IMG_UA }, signal: AbortSignal.timeout(3500) });
-      return r.ok ? r.json() : {};
-    });
-    const t = String((d.responseData && d.responseData.translatedText) || '').trim().toLowerCase();
-    return t && t.length <= 80 && t !== term.toLowerCase() && Number(d.responseStatus) === 200 ? t : null;
-  } catch (_) {
-    return null;
-  }
-}
-
-async function openverse(q) {
-  const qs = new URLSearchParams({ q, page_size: '20', mature: 'false' });
-  const d = await plainJson(OPENVERSE + '?' + qs);
-  return (d.results || [])
-    .map((r) => ({
-      id: 'ov:' + r.id,
-      name: String(r.title || q).slice(0, 60),
-      thumb: r.thumbnail || '',
-      author: r.creator || '',
-      license: [r.license, r.license_version].filter(Boolean).join(' ').toUpperCase(),
-      page: r.foreign_landing_url || '',
-    }))
-    .filter((i) => {
-      try { return i.thumb && hostOk(new URL(i.thumb).hostname); } catch (_) { return false; }
-    });
-}
-
-async function commons(q) {
-  const qs = new URLSearchParams({
-    action: 'query', generator: 'search', gsrsearch: q + ' filetype:bitmap', gsrnamespace: '6', gsrlimit: '20',
-    prop: 'imageinfo', iiprop: 'url|extmetadata', iiurlwidth: '360', format: 'json', formatversion: '2',
-  });
-  const d = await plainJson(COMMONS + '?' + qs);
-  const pages = ((d.query && d.query.pages) || []).sort((a, b) => (a.index || 0) - (b.index || 0));
-  return pages
-    .map((p) => {
-      const ii = (p.imageinfo || [])[0] || {};
-      const meta = ii.extmetadata || {};
-      const strip = (v) => String((v && v.value) || '').replace(/<[^>]*>/g, '').trim();
-      return {
-        id: 'wc:' + p.pageid,
-        name: String(p.title || q).replace(/^File:/, '').replace(/\.[^.]+$/, '').replace(/_/g, ' ').slice(0, 60),
-        thumb: ii.thumburl || '',
-        author: strip(meta.Artist).slice(0, 60),
-        license: strip(meta.LicenseShortName),
-        page: ii.descriptionurl || '',
-      };
-    })
-    .filter((i) => {
-      try { return i.thumb && hostOk(new URL(i.thumb).hostname); } catch (_) { return false; }
-    });
-}
-
-function interleave(lists) {
-  const out = [], seen = new Set();
-  for (let i = 0; out.length < 30; i++) {
-    let any = false;
-    for (const l of lists) {
-      if (i < l.length) {
-        any = true;
-        if (!seen.has(l[i].id)) { seen.add(l[i].id); out.push(l[i]); }
-      }
-    }
-    if (!any) break;
-  }
-  return out;
-}
-
-function searchImages(term) {
-  return cachedJson('img:' + term.toLowerCase(), async () => {
-    const en = await toEnglish(term);
-    const terms = en ? [en, term] : [term];
-    let failures = 0, calls = 0;
-    const run = async (fn) => { calls++; try { return await fn(); } catch (_) { failures++; return []; } };
-    let items = interleave(await Promise.all(terms.map((t) => run(() => openverse(t)))));
-    if (items.length < 8) items = items.concat(interleave(await Promise.all(terms.map((t) => run(() => commons(t))))));
-    if (!items.length && failures === calls) throw new Error('Os serviços de imagens não responderam.');
-    return items.slice(0, 30).map((i) => ({ ...i, thumb: proxied(i.thumb) }));
-  });
+async function searchImages(q, page) {
+  const r = await images.searchImages(q, page);
+  return { items: r.items.map((i) => ({ ...i, thumb: proxied(i.thumb) })), more: r.more, page: r.page };
 }
 
 async function fetchImageSafe(raw) {
@@ -160,7 +60,7 @@ async function getProxied(raw) {
   if (proxyCache.has(raw)) return proxyCache.get(raw);
   const item = await fetchImageSafe(raw);
   proxyCache.set(raw, item);
-  if (proxyCache.size > 150) proxyCache.delete(proxyCache.keys().next().value);
+  if (proxyCache.size > 400) proxyCache.delete(proxyCache.keys().next().value);
   return item;
 }
 
@@ -194,7 +94,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/search') {
       const q = (url.searchParams.get('q') || '').trim().slice(0, 80), source = url.searchParams.get('source') || '';
       if (q.length < 2) return sendJson(res, 400, { error: 'Digite pelo menos 2 letras.' });
-      if (source === 'web') return sendJson(res, 200, { items: await searchImages(q) });
+      if (source === 'web') return sendJson(res, 200, await searchImages(q, url.searchParams.get('page')));
       try { return sendJson(res, 200, { items: await sources.search(source, q) }); }
       catch (e) { return sendJson(res, e.code || 502, { error: e.code ? e.message : 'Não consegui falar com o serviço de busca agora. ' + e.message }); }
     }
@@ -209,7 +109,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/images') {
       const q = (url.searchParams.get('q') || '').trim().slice(0, 80);
       if (q.length < 2) return sendJson(res, 400, { error: 'Digite pelo menos 2 letras.' });
-      return sendJson(res, 200, { items: await searchImages(q) });
+      return sendJson(res, 200, await searchImages(q, url.searchParams.get('page')));
     }
     if (url.pathname === '/imgproxy') {
       let img;

@@ -55,7 +55,7 @@ Com a conta ativa, abra uma tierlist e clique em **Publicar na comunidade**: o s
 
 ## Imagens da web
 
-Vêm de bancos livres (Openverse e Wikimedia Commons). A busca em português é traduzida para inglês antes. A maioria das licenças é Creative Commons: para uso pessoal não há problema, mas para publicar confira o crédito mostrado na aba Fotos. O servidor só baixa imagens desses dois bancos.
+Vêm de bancos livres: Openverse, Wikimedia Commons e, se a chave `PEXELS_API_KEY` estiver definida, Pexels (chave gratuita em pexels.com/api). A busca usa o termo em português e a tradução para inglês ao mesmo tempo, em todas as fontes. Os resultados são ordenados por relevância (palavras no título e nas etiquetas) e qualidade (tamanho e proporção da imagem; nomes como "DSC_0001", mapas e logotipos ficam mais abaixo). Repetidos são removidos. Vêm 40 por vez; ao rolar até o fim, aparecem mais. Cada busca fica guardada por 1 hora. A maioria das licenças é Creative Commons: para uso pessoal não há problema, mas para publicar confira o crédito mostrado na aba Fotos. O servidor só baixa imagens desses bancos.
 
 ## Publicar online
 
@@ -68,6 +68,7 @@ Variáveis de ambiente:
 | `PORT` | porta (a hospedagem costuma definir sozinha) |
 | `DATA_DIR` | pasta das contas e listas, num disco/volume persistente (ex.: `/data`) |
 | `TRUST_PROXY=1` | atrás de proxy HTTPS (quase toda hospedagem): usa o IP real e marca o cookie como `Secure` |
+| `PEXELS_API_KEY` | opcional: inclui fotos do Pexels na busca de imagens |
 
 O projeto inclui um `Dockerfile` (volume em `/data`) e responde em `/healthz` para o teste de saúde. Passos gerais em Render, Railway, Fly.io ou um VPS:
 
