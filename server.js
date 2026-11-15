@@ -7,6 +7,7 @@ const path = require('path');
 const auth = require('./auth');
 const community = require('./community');
 const sources = require('./sources');
+const share = require('./share');
 
 const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC = path.join(__dirname, 'public');
@@ -90,6 +91,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/healthz') return sendJson(res, 200, { ok: true });
     if (await auth.handle(req, res, url)) return;
     if (await community.handle(req, res, url)) return;
+    if (await share.handle(req, res, url, PUBLIC)) return;
     if (url.pathname === '/api/sources') return sendJson(res, 200, { available: sources.available() });
     if (url.pathname === '/api/search') {
       const q = (url.searchParams.get('q') || '').trim().slice(0, 80), source = url.searchParams.get('source') || '';

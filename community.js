@@ -24,23 +24,20 @@ const postFile = (id) => path.join(POSTS, id + '.json');
 const str = (v, max) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, max);
 const bad = (msg, code) => Object.assign(new Error(msg), { code: code || 400 });
 
-// Reescreve a tierlist só com campos conhecidos. Fotos entram apenas se forem imagens em base64.
-function cleanTier(data, lib) {
-  if (!data || typeof data !== 'object' || !Array.isArray(data.tiers) || !Array.isArray(data.pool)) throw bad('Tierlist inválida.');
+// Reescreve itens só com campos conhecidos. Fotos entram apenas se forem imagens em base64.
+// Usado pela comunidade e pelos links de compartilhamento (share.js).
+function itemCleaner(lib) {
   lib = lib && typeof lib === 'object' ? lib : {};
-  const title = str(data.title, 60);
-  if (!title) throw bad('Dê um nome à tierlist antes de publicar.');
-  if (data.tiers.length < 1 || data.tiers.length > 12) throw bad('A tierlist precisa ter de 1 a 12 tiers.');
-  const photos = {}; let photoBytes = 0, total = 0;
-  const item = (g) => {
+  const st = { photos: {}, photoBytes: 0, total: 0 };
+  st.item = (g) => {
     if (!g || typeof g !== 'object') return null;
     const name = str(g.name, 60); if (!name) return null;
-    if (++total > 300) throw bad('Muitos itens (máximo 300).');
+    if (++st.total > 300) throw bad('Muitos itens (máximo 300).');
     const id = str(g.id, 64) || crypto.randomBytes(6).toString('hex');
     if (g.u) {
       const l = lib[g.id];
       if (l && typeof l.src === 'string' && l.src.length <= MAX_PER_PHOTO && IMG.test(l.src)) {
-        if (!photos[id]) { photoBytes += l.src.length; photos[id] = { name: str(l.name, 60) || name, src: l.src, credit: str(l.credit, 120) }; }
+        if (!st.photos[id]) { st.photoBytes += l.src.length; st.photos[id] = { name: str(l.name, 60) || name, src: l.src, credit: str(l.credit, 120) }; }
         return { id, name, u: 1 };
       }
       return { id, name, x: 1 };   // foto sem arquivo válido vira item de texto
@@ -48,17 +45,28 @@ function cleanTier(data, lib) {
     if (g.r !== undefined) return sources.validRef(g.r) ? Object.assign({ id, name, r: g.r }, sources.validPlay(g.p) ? { p: g.p } : {}) : { id, name, x: 1 };   // capa de uma fonte (Steam, filmes…)
     const out = { id, name, x: 1 };
     if (typeof g.c === 'string' && HEX.test(g.c)) out.c = g.c;
+    if (typeof g.ico === 'string' && g.ico.length <= 16) out.ico = str(g.ico, 16);
     return out;
   };
-  const items = (a) => (Array.isArray(a) ? a.slice(0, 300).map(item).filter(Boolean) : []);
+  st.items = (a) => (Array.isArray(a) ? a.slice(0, 300).map(st.item).filter(Boolean) : []);
+  st.checkPhotos = () => { if (st.photoBytes > MAX_PHOTOS) throw bad('As fotos da lista são grandes demais. Use menos fotos.', 413); };
+  return st;
+}
+
+function cleanTier(data, lib) {
+  if (!data || typeof data !== 'object' || !Array.isArray(data.tiers) || !Array.isArray(data.pool)) throw bad('Tierlist inválida.');
+  const title = str(data.title, 60);
+  if (!title) throw bad('Dê um nome à tierlist antes de publicar.');
+  if (data.tiers.length < 1 || data.tiers.length > 12) throw bad('A tierlist precisa ter de 1 a 12 tiers.');
+  const c = itemCleaner(lib);
   const tiers = data.tiers.map((t, i) => ({
     id: str(t && t.id, 40) || 't' + i, name: str(t && t.name, 40),
-    color: t && HEX.test(t.color) ? t.color : '#888888', items: items(t && t.items),
+    color: t && HEX.test(t.color) ? t.color : '#888888', items: c.items(t && t.items),
   }));
-  const pool = items(data.pool);
-  if (!total) throw bad('Coloque pelo menos um item na tierlist antes de publicar.');
-  if (photoBytes > MAX_PHOTOS) throw bad('As fotos da tierlist são grandes demais para publicar. Use menos fotos.', 413);
-  return { data: { title, names: !!data.names, pool, tiers }, photos, total };
+  const pool = c.items(data.pool);
+  if (!c.total) throw bad('Coloque pelo menos um item na tierlist antes de publicar.');
+  c.checkPhotos();
+  return { data: { title, names: !!data.names, pool, tiers }, photos: c.photos, total: c.total };
 }
 
 const fold = (v) => String(v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -153,4 +161,4 @@ function removePost(id) {
 }
 auth.hooks.onDelete.push((uid) => { for (const m of Object.values(index.posts)) if (m.uid === uid) removePost(m.id); });
 
-module.exports = { handle };
+module.exports = { handle, itemCleaner, cleanTier, str, bad };

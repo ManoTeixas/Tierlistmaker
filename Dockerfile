@@ -1,6 +1,7 @@
 FROM node:22-alpine
 WORKDIR /app
-COPY package.json server.js auth.js community.js sources.js ./
+# todos os módulos .js da raiz (server, auth, community, sources, images, share…)
+COPY package.json *.js ./
 COPY public ./public
 COPY catalog ./catalog
 ENV NODE_ENV=production DATA_DIR=/data TRUST_PROXY=1

@@ -202,4 +202,4 @@ async function handle(req, res, url) {
 }
 
 const hooks = { onDelete: [] };   // outros módulos (comunidade) apagam os dados de quem exclui a conta
-module.exports = { handle, DATA_DIR, sessionUser, readJson, send, clientIp, tooMany, writeAtomic, originOk, hooks };
+module.exports = { handle, DATA_DIR, sessionUser, readJson, send, clientIp, tooMany, writeAtomic, originOk, hooks, isHttps };

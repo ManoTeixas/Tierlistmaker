@@ -218,7 +218,26 @@
 
   /* Telas: início, modelos e editor */
   body:not([data-view="edit"]) .top, body:not([data-view="edit"]) .app { display: none; }
-  body[data-view="edit"] .home, body:not([data-view="home"]) #home, body:not([data-view="category"]) #category, body:not([data-view="pick"]) #pick, body:not([data-view="community"]) #community { display: none; }
+  body[data-view="edit"] .home, body:not([data-view="home"]) #home, body:not([data-view="category"]) #category, body:not([data-view="pick"]) #pick, body:not([data-view="community"]) #community, body:not([data-view="shared"]) #shared { display: none; }
+  /* Compartilhar */
+  #shareDlg { width: min(520px, calc(100vw - 32px)); background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+  #shareDlg::backdrop { background: rgba(5,8,15,.7); }
+  .shform { display: grid; gap: 12px; }
+  .shform h2 { margin: 0; font-family: var(--font-d); font-size: 28px; text-transform: uppercase; letter-spacing: .03em; }
+  .shprev { display: grid; place-items: center; min-height: 120px; max-height: 38vh; overflow: hidden; background: var(--ink); border: 1px solid var(--line); border-radius: 10px; }
+  .shprev img { display: block; max-width: 100%; max-height: 38vh; object-fit: contain; }
+  .shprev img:not([src]) { display: none; }
+  .shlink { display: flex; gap: 8px; }
+  .shlink input { flex: 1; min-width: 0; min-height: 40px; padding: 6px 10px; background: var(--ink); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font-size: 14px; }
+  .shacts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .shacts .btn, .shbtns .btn { text-decoration: none; display: inline-flex; align-items: center; color: var(--text); }
+  .shacts a.off { pointer-events: none; opacity: .5; }
+  .shnote { margin: 0; font-size: 13px; color: var(--mute); line-height: 1.45; }
+  .shnote .alink { color: #ff9b8a; }
+  .shbtns { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 18px; }
+  .shimg { margin: 0; }
+  .shimg img { display: block; max-width: 100%; max-height: 80vh; margin: 0 auto; border-radius: 12px; border: 1px solid var(--line); }
+  .shimg img:not([src]) { display: none; }
   .cgrid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
   .mcard.soon { opacity: .55; cursor: default; } .mcard.soon:hover { transform: none; border-color: var(--line); }
   .mcard .art .big { font-family: var(--font-d); font-weight: 700; font-size: 64px; color: rgba(255,255,255,.9); }
@@ -426,6 +445,44 @@
   <div class="saved" id="comList"></div>
 </section>
 
+<!-- Lista compartilhada por link (/s/<id>) -->
+<section class="home" id="shared" aria-label="Lista compartilhada">
+  <button class="btn back" type="button" data-go="home">← Início</button>
+  <div class="hhead">
+    <span class="mark" aria-hidden="true"></span>
+    <div>
+      <h1 id="shTitle">Carregando…</h1>
+      <p id="shInfo"></p>
+    </div>
+  </div>
+  <div class="shbtns" id="shBtns">
+    <button class="btn primary" type="button" id="shUse">Fazer minha versão</button>
+    <button class="btn" type="button" id="shCopy">Copiar link</button>
+    <a class="btn" id="shDown" download>Baixar imagem</a>
+  </div>
+  <figure class="shimg"><img id="shImg" alt=""></figure>
+</section>
+
+<dialog id="shareDlg" aria-labelledby="shareTitle">
+  <div class="shform">
+    <h2 id="shareTitle">Compartilhar</h2>
+    <div class="shprev"><img id="sharePrev" alt="Imagem da lista"></div>
+    <p class="aerr" id="shareErr" role="alert"></p>
+    <div class="shlink">
+      <input id="shareUrl" readonly aria-label="Link da lista" value="Gerando link…">
+      <button class="btn primary" type="button" id="shareCopy" disabled>Copiar</button>
+    </div>
+    <div class="shacts">
+      <button class="btn" type="button" id="shareNative" disabled>Enviar…</button>
+      <a class="btn" id="shareWa" target="_blank" rel="noopener">WhatsApp</a>
+      <a class="btn" id="shareX" target="_blank" rel="noopener">X / Twitter</a>
+      <button class="btn" type="button" id="shareDown" disabled>Baixar imagem</button>
+    </div>
+    <p class="shnote">Quem abrir o link vê a imagem da lista e pode fazer a própria versão, sem precisar de conta. Mudou a lista? Clique em Compartilhar de novo: o mesmo link é atualizado. <button class="alink" type="button" id="shareOff">Desativar este link</button></p>
+    <div class="abtn"><button class="btn" type="button" id="shareClose">Fechar</button></div>
+  </div>
+</dialog>
+
 <dialog id="pubDlg" aria-labelledby="pubTitle">
   <form id="pubForm" novalidate>
     <h2 id="pubTitle">Publicar na comunidade</h2>
@@ -477,7 +534,8 @@
     </div>
     <button class="btn" id="btnClear" type="button">Limpar</button>
     <button class="btn" id="btnSave" type="button">Salvar</button>
-    <button class="btn primary" id="btnExport" type="button">Baixar imagem</button>
+    <button class="btn" id="btnExport" type="button">Baixar imagem</button>
+    <button class="btn primary" id="btnShare" type="button" title="Gera um link e a imagem da lista para mandar aos amigos">Compartilhar</button>
     <span id="saveState" role="status" aria-live="polite"></span>
   </div>
 </header>
@@ -1034,8 +1092,10 @@ function tierFromTpl(t) {
   d.pool = t.items.map((it) => ({ id: "x" + uidn(), name: it, x: 1 }));
   return d;
 }
+const SITE_TITLE = "Escalação — seu gosto dá discussão";   // fixo: no link /s/… o servidor troca o <title>
 function renderView() {
   document.body.dataset.view = S.view;
+  if (S.view !== "shared") document.title = SITE_TITLE;
   if (S.view !== "edit") stopPlayer();
   exitFull();
   window.scrollTo(0, 0);
@@ -1043,19 +1103,22 @@ function renderView() {
   else if (S.view === "pick") renderPick();
   else if (S.view === "category") renderCategory();
   else if (S.view === "community") renderCommunity();
+  else if (S.view === "shared") renderShared();
   else renderAll();
 }
 function goView(v, catId, fmt) {
   if (v === "edit" && !S.cur) v = "home";
   if (catId) S.catId = catId;
   if (fmt !== undefined) S.fmt = fmt;
-  S.view = v; history.pushState({ v, c: S.catId, f: S.fmt }, ""); renderView();
+  // saindo de um link compartilhado (/s/…), o endereço volta para a raiz do site
+  S.view = v; history.pushState({ v, c: S.catId, f: S.fmt }, "", location.pathname.startsWith("/s/") ? "/" : undefined); renderView();
 }
 window.addEventListener("popstate", (e) => {
   let v = (e.state && e.state.v) || "home";
   if (v === "edit" && !S.cur) v = "home";
   if (e.state && e.state.c) S.catId = e.state.c;
   if (e.state) S.fmt = e.state.f || "";
+  if (v === "shared") S.sid = e.state.sid;
   S.view = v; renderView();
 });
 function stopPlayer() { $("#plBody").innerHTML = ""; $("#player").classList.add("hide"); }
@@ -1970,12 +2033,15 @@ async function drawBracket() {
   }
   return c;
 }
+async function renderListCanvas() {
+  await Promise.all([document.fonts.load('700 58px "Barlow Condensed"'), document.fonts.load('600 18px "Barlow"')]);
+  return isBr() ? await drawBracket() : isTier() ? await drawTier() : await drawPitch();
+}
 async function exportPNG() {
   const btn = $("#btnExport");
   btn.disabled = true; btn.textContent = "Gerando…";
   try {
-    await Promise.all([document.fonts.load('700 58px "Barlow Condensed"'), document.fonts.load('600 18px "Barlow"')]);
-    const c = isBr() ? await drawBracket() : isTier() ? await drawTier() : await drawPitch();
+    const c = await renderListCanvas();
     const blob = await new Promise((res) => c.toBlob(res, "image/png"));
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -2248,7 +2314,137 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-renderView();   // sempre abre na tela inicial; as listas salvas aparecem em "Minhas listas"
+/* ---------- Compartilhar por link ---------- */
+// Cada lista guarda (só neste navegador) o id e o token secreto do seu link, para atualizar o mesmo link depois.
+const SHAREKEY = "escalacao-shares-v1";
+const readShares = () => { try { return JSON.parse(localStorage.getItem(SHAREKEY) || "{}") || {}; } catch (_) { return {}; } };
+const writeShares = (m) => { try { localStorage.setItem(SHAREKEY, JSON.stringify(m)); } catch (_) {} };
+const MODE_LABEL = { tier: "Tierlist", futebol: "Escalação", bracket: "Chaveamento" };
+const slugOf = (s) => (String(s || "lista").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "lista");
+let shareBlob = null, shareLink = "", shareBusy = false;
+const blobToDataUrl = (b) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
+function listItems(mode, d) {
+  return mode === "bracket" ? d.entries.filter(Boolean) : mode === "tier" ? [...d.pool, ...d.tiers.flatMap((t) => t.items)] : [...Object.values(d.slots), ...d.pool];
+}
+function setShareLink(url) {
+  shareLink = url;
+  const text = `${M().title || "Minha lista"} — veja e faça a sua: ${url}`;
+  $("#shareUrl").value = url || "";
+  $("#shareCopy").disabled = !url;
+  $("#shareNative").disabled = !url || !navigator.share;
+  $("#shareNative").classList.toggle("hide", !navigator.share);
+  $("#shareWa").href = url ? "https://wa.me/?text=" + encodeURIComponent(text) : "#";
+  $("#shareX").href = url ? "https://twitter.com/intent/tweet?text=" + encodeURIComponent(text) : "#";
+  for (const a of [$("#shareWa"), $("#shareX")]) a.classList.toggle("off", !url);
+  $("#shareOff").classList.toggle("hide", !url);
+}
+async function openShare() {
+  if (shareBusy) return;
+  if (!hasContent(S.mode, M())) { setSaveState("Coloque itens na lista antes de compartilhar.", true); return; }
+  shareBusy = true; save();
+  const dlg = $("#shareDlg"), err = (m) => { $("#shareErr").textContent = m || ""; };
+  err(""); setShareLink(""); $("#shareUrl").value = "Gerando imagem…"; $("#shareDown").disabled = true;
+  if (shareBlob) URL.revokeObjectURL($("#sharePrev").src); $("#sharePrev").removeAttribute("src"); shareBlob = null;
+  dlg.showModal();
+  try {
+    const c = await renderListCanvas();
+    shareBlob = await new Promise((res) => c.toBlob(res, "image/jpeg", 0.88));
+    $("#sharePrev").src = URL.createObjectURL(shareBlob); $("#shareDown").disabled = false;
+    $("#shareUrl").value = "Gerando link…";
+    const lib = {};
+    for (const g of listItems(S.mode, M())) if (g.u && LIB[g.id]) lib[g.id] = LIB[g.id];
+    const body = { mode: S.mode, cat: S.cur.cat, data: M(), lib, image: await blobToDataUrl(shareBlob) };
+    const shares = readShares(), mine = shares[S.cur.id];
+    let r, j;
+    if (mine) {   // já existe link para esta lista: atualiza o mesmo
+      r = await fetch("/api/share/" + mine.id, { method: "PUT", headers: { "Content-Type": "application/json", "X-Share-Token": mine.token }, body: JSON.stringify(body) });
+      j = await r.json().catch(() => ({}));
+      if (r.status === 404 || r.status === 403) { delete shares[S.cur.id]; writeShares(shares); r = null; }
+    }
+    if (!r) {
+      r = await fetch("/api/share", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      j = await r.json().catch(() => ({}));
+      if (r.ok) { shares[S.cur.id] = { id: j.id, token: j.token }; writeShares(shares); }
+    }
+    if (!r.ok) throw new Error(j.error || "Não consegui criar o link (erro " + r.status + ").");
+    setShareLink(location.origin + "/s/" + j.id);
+    $("#shareUrl").select();
+  } catch (e) {
+    $("#shareUrl").value = ""; err(e.message === "Failed to fetch" ? "Sem conexão com o servidor. A imagem ainda pode ser baixada." : e.message);
+  } finally { shareBusy = false; }
+}
+async function copyText(text, btn) {
+  try { await navigator.clipboard.writeText(text); }
+  catch (_) { const t = document.createElement("textarea"); t.value = text; t.style.position = "fixed"; t.style.opacity = "0"; (btn.closest("dialog") || document.body).appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+  const old = btn.textContent; btn.textContent = "Copiado ✓"; setTimeout(() => { btn.textContent = old; }, 1800);
+}
+$("#btnShare").addEventListener("click", openShare);
+$("#shareClose").addEventListener("click", () => $("#shareDlg").close());
+$("#shareCopy").addEventListener("click", (e) => copyText(shareLink, e.currentTarget));
+$("#shareDown").addEventListener("click", () => {
+  if (!shareBlob) return;
+  const a = document.createElement("a"); a.href = $("#sharePrev").src; a.download = slugOf(M().title) + ".jpg";
+  document.body.appendChild(a); a.click(); a.remove();
+});
+$("#shareNative").addEventListener("click", async () => {
+  const title = M().title || "Minha lista", data = { title, text: `${title} — veja e faça a sua:`, url: shareLink };
+  const file = shareBlob && new File([shareBlob], slugOf(title) + ".jpg", { type: "image/jpeg" });
+  try { await navigator.share(file && navigator.canShare && navigator.canShare({ files: [file] }) ? { ...data, files: [file] } : data); }
+  catch (e) { if (e.name !== "AbortError") $("#shareErr").textContent = "Não consegui abrir o compartilhamento do aparelho. Use Copiar."; }
+});
+$("#shareOff").addEventListener("click", async () => {
+  const shares = readShares(), mine = S.cur && shares[S.cur.id];
+  if (!mine || !confirm("Desativar este link? Quem tentar abrir verá que ele não existe mais.")) return;
+  const r = await fetch("/api/share/" + mine.id, { method: "DELETE", headers: { "X-Share-Token": mine.token } }).catch(() => null);
+  if (r && (r.ok || r.status === 404)) { delete shares[S.cur.id]; writeShares(shares); setShareLink(""); $("#shareUrl").value = "Link desativado."; }
+  else $("#shareErr").textContent = "Não consegui desativar agora. Tente de novo.";
+});
+
+// Página de quem recebe o link.
+let shData = null;
+async function renderShared() {
+  const id = S.sid;
+  if (shData && shData.id === id) return drawShared();
+  shData = null;
+  $("#shTitle").textContent = "Carregando…"; $("#shInfo").textContent = ""; $("#shBtns").classList.add("hide"); $("#shImg").removeAttribute("src");
+  try {
+    const r = await fetch("/api/share/" + encodeURIComponent(id) + "?lite=1"), j = await r.json().catch(() => ({}));
+    if (S.sid !== id) return;
+    if (!r.ok) throw new Error(r.status === 404 ? "Este link não existe ou foi desativado por quem o criou." : j.error || "Erro " + r.status);
+    shData = j; drawShared();
+  } catch (e) {
+    $("#shTitle").textContent = "Link indisponível";
+    $("#shInfo").textContent = e.message === "Failed to fetch" ? "Sem conexão com o servidor. Tente de novo em instantes." : e.message;
+  }
+}
+function drawShared() {
+  const j = shData, cat = catOf(j.cat);
+  document.title = j.title + " — Escalação";
+  $("#shTitle").textContent = j.title;
+  $("#shInfo").textContent = `${MODE_LABEL[j.mode]} · ${cat.name} · ${j.n} ${j.n === 1 ? "item" : "itens"} · compartilhada em ${fmtDate(j.updated)}. Gostou? Faça a sua versão: a cópia vai para as suas listas.`;
+  $("#shImg").src = `/s/${j.id}.img?v=${j.updated}`; $("#shImg").alt = j.title;
+  $("#shDown").href = $("#shImg").src; $("#shDown").download = slugOf(j.title) + ".jpg";
+  $("#shBtns").classList.remove("hide");
+}
+$("#shUse").addEventListener("click", async (e) => {
+  if (!shData) return;
+  const btn = e.currentTarget; btn.disabled = true;
+  let j;
+  try { const r = await fetch("/api/share/" + encodeURIComponent(shData.id)); j = await r.json(); if (!r.ok) throw new Error(j.error); }
+  catch (err) { btn.disabled = false; return alert((err && err.message) || "Não consegui abrir esta lista."); }
+  btn.disabled = false;
+  for (const [pid, ph] of Object.entries(j.photos || {})) if (!LIB[pid]) LIB[pid] = { id: pid, name: ph.name, src: ph.src, credit: ph.credit || "" };
+  saveLib();
+  const p = fixProj({ mode: j.mode, cat: j.cat, data: JSON.parse(JSON.stringify(j.data)) });
+  if (!p) return alert("Não consegui abrir esta lista.");
+  p.id = "p" + uidn(); p.updated = Date.now(); p.data.title = (j.title + " (minha versão)").slice(0, 60);
+  openCur(p);
+});
+$("#shCopy").addEventListener("click", (e) => copyText(location.origin + "/s/" + S.sid, e.currentTarget));
+
+const shMatch = /^\/s\/([A-Za-z0-9_-]{11})$/.exec(location.pathname);
+if (shMatch) { S.view = "shared"; S.sid = shMatch[1]; history.replaceState({ v: "shared", sid: S.sid }, ""); }
+renderView();   // abre na tela inicial (ou na lista compartilhada, se veio por um link)
 initAuth();
 </script>
 </body>

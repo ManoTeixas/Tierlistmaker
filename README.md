@@ -51,7 +51,8 @@ Com a conta ativa, abra uma tierlist e clique em **Publicar na comunidade**: o s
 - Campos: no painel da direita, **Elemento só de texto** cria um nome escrito (com a cor de fundo que você escolher). Fotos e imagens funcionam igual: com uma vaga marcada o item entra nela; sem vaga marcada vai para **Sem posição**, abaixo do campo. De lá você arrasta até a vaga (ou clica no elemento para colocá-lo na vaga marcada ou na primeira livre), e arrasta um jogador do campo de volta para lá. Arraste a foto ou o ícone vazio para mover o jogador livremente (setas do teclado também). "Resetar posições" volta à formação. Solte sobre o técnico ou um reserva para trocar, ou sobre o painel para remover.
 - Tierlist: clique na área de um tier para marcá-lo; os próximos itens vão para ele. Sem tier marcado, vão para "Sem tier". Arraste os itens entre tiers. "Mostrar nomes" exibe o nome sob cada item.
 - Fotos: botão "Adicionar fotos", Ctrl+V para colar, ou solte arquivos no painel, numa vaga ou num tier.
-- "Baixar imagem" gera um PNG para compartilhar.
+- "Baixar imagem" gera um PNG.
+- **Compartilhar** gera um link (`/s/…`) e a imagem da lista (tierlist, escalação ou chaveamento). Dá para copiar o link, mandar pelo WhatsApp ou X, usar o compartilhamento do celular (que envia a imagem junto) ou baixar a imagem. Quem abre o link vê a imagem e pode clicar em **Fazer minha versão** para ganhar uma cópia editável, sem precisar de conta. No WhatsApp e em outras redes, o link aparece com a prévia da imagem. Clicar em Compartilhar de novo na mesma lista atualiza o mesmo link; também dá para desativá-lo. Só o navegador que criou o link consegue alterá-lo. Os links ficam em `DATA_DIR/shares`.
 
 ## Imagens da web
 
