@@ -1,15 +1,13 @@
 // Links de compartilhamento: qualquer lista (tierlist, escalação, chaveamento) vira um link /s/<id>
 // que mostra a imagem da lista e deixa quem abrir fazer a própria versão. Não precisa de conta:
 // quem cria recebe um token secreto para atualizar ou desativar o mesmo link depois.
-// Dados em DATA_DIR/shares/<id>.json (lista + fotos) e <id>.img (imagem gerada no navegador).
+// Cada link guarda a lista + fotos e a imagem gerada no navegador, no store (Postgres ou arquivos).
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const auth = require('./auth');
+const store = require('./store');
 const { itemCleaner, str, bad } = require('./community');
-
-const DIR = path.join(auth.DATA_DIR, 'shares');
-fs.mkdirSync(DIR, { recursive: true });
 
 const MAX_BODY = 9 * 1024 * 1024, MAX_IMAGE = 3 * 1024 * 1024;
 const ID = /^[A-Za-z0-9_-]{11}$/;
@@ -19,8 +17,6 @@ const MODE_NAME = { tier: 'Tierlist', futebol: 'Escalação', bracket: 'Chaveame
 const PITCH_KEY = /^(f(10|[0-9])|c|b[0-6])$/;
 const BR_SIZES = [4, 8, 16, 32, 64];
 
-const jsonFile = (id) => path.join(DIR, id + '.json');
-const imgFile = (id) => path.join(DIR, id + '.img');
 const sha = (s) => crypto.createHash('sha256').update(String(s)).digest('hex');
 const safeEq = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 const num = (v, a, b) => (Number.isFinite(v) ? Math.min(b, Math.max(a, +v.toFixed(1))) : null);
@@ -78,10 +74,7 @@ function cleanImage(dataUrl) {
   return { buf, type: 'image/' + m[1] };
 }
 
-function readShare(id) {
-  if (!ID.test(id || '')) return null;
-  try { return JSON.parse(fs.readFileSync(jsonFile(id), 'utf8')); } catch (_) { return null; }
-}
+const readShare = async (id) => (ID.test(id || '') ? store.getShare(id) : null);
 const publicView = (s) => ({ id: s.id, mode: s.mode, cat: s.cat, title: s.data.title, data: s.data, photos: s.photos, n: s.n, created: s.created, updated: s.updated });
 
 async function save(id, prev, b) {
@@ -123,14 +116,15 @@ async function handle(req, res, url, publicDir) {
   // /s/<id>  e  /s/<id>.img
   let m;
   if ((m = /^\/s\/([A-Za-z0-9_-]{11})(\.img)?$/.exec(p)) && req.method === 'GET') {
-    const s = readShare(m[1]);
+    let s;
+    try { s = await readShare(m[1]); } catch (e) { return auth.sendError(res, e), true; }
     if (m[2]) {
       if (!s) return send(res, 404, { error: 'Link não encontrado.' }), true;
-      fs.readFile(imgFile(s.id), (err, buf) => {
-        if (err) return send(res, 404, { error: 'Imagem não encontrada.' });
-        res.writeHead(200, { 'Content-Type': s.imgType, 'Cache-Control': 'public, max-age=300' });
-        res.end(buf);
-      });
+      let buf;
+      try { buf = await store.getShareImg(s.id); } catch (e) { return auth.sendError(res, e), true; }
+      if (!buf) return send(res, 404, { error: 'Imagem não encontrada.' }), true;
+      res.writeHead(200, { 'Content-Type': s.imgType, 'Cache-Control': 'public, max-age=300' });
+      res.end(buf);
       return true;
     }
     // link inexistente: entrega o site mesmo assim, e ele mostra "link não encontrado"
@@ -147,16 +141,15 @@ async function handle(req, res, url, publicDir) {
     if (!id && req.method === 'POST') {
       if (auth.tooMany('share:' + auth.clientIp(req), 30, 3600e3, true)) return send(res, 429, { error: 'Muitos links criados seguidos. Tente de novo mais tarde.' }), true;
       const b = await auth.readJson(req, MAX_BODY);
-      let nid; do { nid = crypto.randomBytes(8).toString('base64url'); } while (!ID.test(nid) || fs.existsSync(jsonFile(nid)));
+      let nid; do { nid = crypto.randomBytes(8).toString('base64url'); } while (!ID.test(nid) || (await store.shareExists(nid)));
       const token = crypto.randomBytes(18).toString('base64url');
       const { rec, img } = await save(nid, null, b);
       rec.tokenHash = sha(token);
-      await auth.writeAtomic(imgFile(nid), img.buf);
-      await auth.writeAtomic(jsonFile(nid), JSON.stringify(rec));
+      await store.putShare(rec, img.buf);
       return send(res, 200, { id: nid, token, url: '/s/' + nid }), true;
     }
 
-    const s = id && readShare(id);
+    const s = id && (await readShare(id));
     if (!s) return send(res, 404, { error: 'Link não encontrado ou desativado.' }), true;
 
     if (req.method === 'GET') {   // ?lite=1: só o resumo, sem a lista e as fotos (a página do link carrega mais rápido)
@@ -172,18 +165,16 @@ async function handle(req, res, url, publicDir) {
       if (auth.tooMany('share:' + auth.clientIp(req), 60, 3600e3, true)) return send(res, 429, { error: 'Muitas atualizações seguidas. Tente de novo mais tarde.' }), true;
       const b = await auth.readJson(req, MAX_BODY);
       const { rec, img } = await save(s.id, s, b);
-      await auth.writeAtomic(imgFile(s.id), img.buf);
-      await auth.writeAtomic(jsonFile(s.id), JSON.stringify(rec));
+      await store.putShare(rec, img.buf);
       return send(res, 200, { id: s.id, url: '/s/' + s.id }), true;
     }
     if (req.method === 'DELETE') {
-      await fs.promises.rm(jsonFile(s.id), { force: true });
-      await fs.promises.rm(imgFile(s.id), { force: true });
+      await store.delShare(s.id);
       return send(res, 200, { ok: true }), true;
     }
     return send(res, 405, { error: 'Método não permitido.' }), true;
   } catch (e) {
-    return send(res, e.code >= 400 && e.code < 500 ? e.code : 400, { error: e.message || 'Erro.' }), true;
+    return auth.sendError(res, e), true;
   }
 }
 

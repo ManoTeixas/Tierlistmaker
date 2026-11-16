@@ -4,7 +4,7 @@ Escalação de futebol e tierlist no mesmo site, com suas próprias fotos, image
 
 ## Como rodar
 
-Precisa do Node 18 ou mais novo. Não há nada para instalar.
+Precisa do Node 18 ou mais novo. Para rodar localmente com os dados em arquivos (`./data`), não há nada para instalar. Para usar um banco Postgres, rode `npm install` uma vez e veja [Banco de dados](#banco-de-dados).
 
 ```
 node server.js
@@ -52,7 +52,7 @@ Com a conta ativa, abra uma tierlist e clique em **Publicar na comunidade**: o s
 - Tierlist: clique na área de um tier para marcá-lo; os próximos itens vão para ele. Sem tier marcado, vão para "Sem tier". Arraste os itens entre tiers. "Mostrar nomes" exibe o nome sob cada item.
 - Fotos: botão "Adicionar fotos", Ctrl+V para colar, ou solte arquivos no painel, numa vaga ou num tier.
 - "Baixar imagem" gera um PNG.
-- **Compartilhar** gera um link (`/s/…`) e a imagem da lista (tierlist, escalação ou chaveamento). Dá para copiar o link, mandar pelo WhatsApp ou X, usar o compartilhamento do celular (que envia a imagem junto) ou baixar a imagem. Quem abre o link vê a imagem e pode clicar em **Fazer minha versão** para ganhar uma cópia editável, sem precisar de conta. No WhatsApp e em outras redes, o link aparece com a prévia da imagem. Clicar em Compartilhar de novo na mesma lista atualiza o mesmo link; também dá para desativá-lo. Só o navegador que criou o link consegue alterá-lo. Os links ficam em `DATA_DIR/shares`.
+- **Compartilhar** gera um link (`/s/…`) e a imagem da lista (tierlist, escalação ou chaveamento). Dá para copiar o link, mandar pelo WhatsApp ou X, usar o compartilhamento do celular (que envia a imagem junto) ou baixar a imagem. Quem abre o link vê a imagem e pode clicar em **Fazer minha versão** para ganhar uma cópia editável, sem precisar de conta. No WhatsApp e em outras redes, o link aparece com a prévia da imagem. Clicar em Compartilhar de novo na mesma lista atualiza o mesmo link; também dá para desativá-lo. Só o navegador que criou o link consegue alterá-lo. Os links ficam no banco de dados (ou em `DATA_DIR/shares`, sem banco).
 
 ## Imagens da web
 
@@ -60,14 +60,15 @@ Vêm de bancos livres: Wikipédia, Openverse, Wikimedia Commons e, se a chave `P
 
 ## Publicar online
 
-O site é um servidor Node (`node server.js`, porta na variável `PORT`) e guarda as contas em arquivos na pasta `DATA_DIR` (padrão `./data`). **Essa pasta precisa ficar em armazenamento persistente**; em hospedagem com disco temporário, as contas somem a cada reinício.
+O site é um servidor Node (`node server.js`, porta na variável `PORT`). Contas, listas, comunidade e links ficam num **banco Postgres** quando `DATABASE_URL` está definido; sem ele, ficam em arquivos na pasta `DATA_DIR` (padrão `./data`), que precisa estar em armazenamento persistente. Em hospedagem grátis sem disco (como o plano free do Render), use o Postgres, senão as contas somem a cada reinício.
 
 Variáveis de ambiente:
 
 | Variável | Para quê |
 | --- | --- |
 | `PORT` | porta (a hospedagem costuma definir sozinha) |
-| `DATA_DIR` | pasta das contas e listas, num disco/volume persistente (ex.: `/data`) |
+| `DATABASE_URL` | endereço do Postgres (`postgres://usuario:senha@host/banco`). Quando definido, tudo é guardado nele |
+| `DATA_DIR` | sem `DATABASE_URL`: pasta das contas e listas, num disco/volume persistente (ex.: `/data`) |
 | `TRUST_PROXY=1` | atrás de proxy HTTPS (quase toda hospedagem): usa o IP real e marca o cookie como `Secure` |
 | `PEXELS_API_KEY` | opcional: inclui fotos do Pexels na busca de imagens |
 
@@ -75,10 +76,36 @@ O projeto inclui um `Dockerfile` (volume em `/data`) e responde em `/healthz` pa
 
 1. Suba a pasta para um repositório no GitHub (o `.gitignore` já exclui `data/`).
 2. Crie um serviço Web a partir do repositório (usando o Dockerfile, ou comando `node server.js` com Node 18+).
-3. Anexe um disco/volume persistente e monte em `/data`; defina `DATA_DIR=/data` e `TRUST_PROXY=1`.
-4. Publique e abra o endereço HTTPS que a hospedagem gerar. Confira o custo do disco persistente no plano escolhido.
+3. Defina `DATABASE_URL` (veja abaixo) e `TRUST_PROXY=1`. Sem banco: anexe um disco/volume persistente montado em `/data` e defina `DATA_DIR=/data`.
+4. Publique e abra o endereço HTTPS que a hospedagem gerar.
 
-Backup: copie a pasta `DATA_DIR` de vez em quando. Este armazenamento em arquivos serve bem para um site pequeno; com muitos usuários, o próximo passo é um banco de dados.
+## Banco de dados
+
+O servidor cria as tabelas sozinho na primeira vez que conecta:
+
+| Tabela | O que guarda |
+| --- | --- |
+| `users` | contas (e-mail e senha em scrypt) |
+| `sessions` | logins ativos (só o hash do cookie) |
+| `user_data` | listas e fotos de cada conta, com número de versão para a sincronização entre aparelhos |
+| `posts` | publicações da Comunidade (resumo em `meta`, lista + fotos em `body`) |
+| `shares` | links `/s/…` (lista + imagem gerada) |
+
+Excluir uma conta apaga junto as sessões, as listas e as publicações dela.
+
+Para criar um Postgres grátis:
+
+1. Crie uma conta no [Neon](https://neon.tech) (ou [Supabase](https://supabase.com)) e um projeto.
+2. Copie a *connection string* (`postgresql://...?sslmode=require`).
+3. No Render, em **Environment**, crie `DATABASE_URL` com esse valor e publique de novo. No log deve aparecer `dados em Postgres`.
+
+Localmente: `npm install`, depois `DATABASE_URL=postgresql://... node server.js` (no PowerShell: `$env:DATABASE_URL="postgresql://..."; node server.js`).
+
+**Levar dados que já estão em arquivos para o banco:** com `DATA_DIR` apontando para a pasta antiga, rode `DATABASE_URL=postgresql://... node migrate.js`. Pode rodar mais de uma vez; o que já está no banco não é sobrescrito.
+
+**Testes contra o banco:** `TEST_DATABASE_URL=postgresql://... node --test test/accounts.test.js`. Use um banco vazio só para isso: as tabelas são apagadas no fim.
+
+Backup: os planos do Neon e do Supabase guardam histórico; sem banco, copie a pasta `DATA_DIR` de vez em quando.
 
 ## Categorias e buscas específicas
 

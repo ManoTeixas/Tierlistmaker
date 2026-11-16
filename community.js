@@ -1,14 +1,10 @@
-// Comunidade: tierlists publicadas por quem está logado. Dados em DATA_DIR/community.json (índice)
-// e DATA_DIR/posts/<id>.json (conteúdo + fotos). Tudo que chega é revalidado e reescrito aqui.
-const fs = require('fs');
-const path = require('path');
+// Comunidade: tierlists publicadas por quem está logado. O índice (título, autor, categoria…) fica em
+// memória; o conteúdo + fotos de cada publicação é lido do store (Postgres ou arquivos) quando alguém abre.
+// Tudo que chega é revalidado e reescrito aqui.
 const crypto = require('crypto');
 const auth = require('./auth');
+const store = require('./store');
 const sources = require('./sources');
-
-const INDEX = path.join(auth.DATA_DIR, 'community.json');
-const POSTS = path.join(auth.DATA_DIR, 'posts');
-fs.mkdirSync(POSTS, { recursive: true });
 
 const MAX_BODY = 6 * 1024 * 1024, MAX_PHOTOS = 3.5 * 1024 * 1024, MAX_PER_PHOTO = 700 * 1024;
 const MAX_POSTS_PER_USER = 30, REPORTS_TO_HIDE = 3;
@@ -16,10 +12,8 @@ const ADMIN = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
 const HEX = /^#[0-9a-f]{6}$/i, ID = /^[0-9a-f]{16}$/;
 const IMG = /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/;
 
-let index = { posts: {} };
-try { index = Object.assign(index, JSON.parse(fs.readFileSync(INDEX, 'utf8'))); } catch (_) { /* primeiro uso */ }
-const saveIndex = () => auth.writeAtomic(INDEX, JSON.stringify(index));
-const postFile = (id) => path.join(POSTS, id + '.json');
+const index = { posts: {} };
+const ready = (async () => { for (const m of await store.allPosts()) index.posts[m.id] = m; })();
 
 const str = (v, max) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, max);
 const bad = (msg, code) => Object.assign(new Error(msg), { code: code || 400 });
@@ -112,16 +106,13 @@ async function handle(req, res, url) {
       const pid = str(b.pid, 64);
       if (!pid) return send(res, 400, { error: 'Lista inválida.' }), true;
       const { data, photos, total } = cleanTier(b.data, b.lib);
-      let m = Object.values(index.posts).find((x) => x.uid === uid && x.pid === pid);
-      if (!m) {
-        if (Object.values(index.posts).filter((x) => x.uid === uid).length >= MAX_POSTS_PER_USER) return send(res, 400, { error: `Limite de ${MAX_POSTS_PER_USER} publicações. Retire alguma para publicar outra.` }), true;
-        m = { id: crypto.randomBytes(8).toString('hex'), uid, pid, created: Date.now(), reports: [], hidden: false };
-        index.posts[m.id] = m;
-      }
+      const prev = Object.values(index.posts).find((x) => x.uid === uid && x.pid === pid);
+      if (!prev && Object.values(index.posts).filter((x) => x.uid === uid).length >= MAX_POSTS_PER_USER) return send(res, 400, { error: `Limite de ${MAX_POSTS_PER_USER} publicações. Retire alguma para publicar outra.` }), true;
+      const base = prev || { id: crypto.randomBytes(8).toString('hex'), uid, pid, created: Date.now(), reports: [], hidden: false };
       const names = data.tiers.flatMap((t) => t.items).concat(data.pool).map((g) => g.name);
-      Object.assign(m, { title: data.title, author, category, updated: Date.now(), n: total, sample: names.slice(0, 6), tiers: data.tiers.map((t) => ({ name: t.name, color: t.color })) });
-      await auth.writeAtomic(postFile(m.id), JSON.stringify({ data, photos }));
-      await saveIndex();
+      const m = { ...base, title: data.title, author, category, updated: Date.now(), n: total, sample: names.slice(0, 6), tiers: data.tiers.map((t) => ({ name: t.name, color: t.color })) };
+      await store.putPost(m, { data, photos });
+      index.posts[m.id] = m;
       return send(res, 200, { id: m.id }), true;
     }
 
@@ -131,34 +122,35 @@ async function handle(req, res, url) {
 
     if (parts.length === 3 && req.method === 'GET') {
       if (!canSee) return send(res, 404, { error: 'Publicação não encontrada.' }), true;
-      let body; try { body = JSON.parse(fs.readFileSync(postFile(id), 'utf8')); } catch (_) { return send(res, 404, { error: 'Publicação não encontrada.' }), true; }
+      const body = await store.getPostBody(id);
+      if (!body) return send(res, 404, { error: 'Publicação não encontrada.' }), true;
       return send(res, 200, Object.assign(meta(m, uid), body)), true;
     }
     if (parts.length === 3 && req.method === 'DELETE') {
       if (!user) return send(res, 401, { error: 'Entre na sua conta.' }), true;
       if (m.uid !== uid && !(ADMIN && user.email === ADMIN)) return send(res, 403, { error: 'Só quem publicou pode retirar.' }), true;
-      removePost(id);
+      await store.delPost(id);
+      delete index.posts[id];
       return send(res, 200, { ok: true }), true;
     }
     if (parts.length === 4 && parts[3] === 'report' && req.method === 'POST') {
       if (!user) return send(res, 401, { error: 'Entre na sua conta para denunciar.' }), true;
       if (m.uid === uid) return send(res, 400, { error: 'Você não pode denunciar a própria publicação.' }), true;
-      if (!m.reports.includes(uid)) m.reports.push(uid);
-      if (m.reports.length >= REPORTS_TO_HIDE) m.hidden = true;
-      await saveIndex();
+      if (!m.reports.includes(uid)) {
+        const reports = [...m.reports, uid];
+        const next = { ...m, reports, hidden: m.hidden || reports.length >= REPORTS_TO_HIDE };
+        await store.putPostMeta(next);
+        index.posts[id] = next;
+      }
       return send(res, 200, { ok: true }), true;
     }
     return send(res, 404, { error: 'Não encontrado.' }), true;
   } catch (e) {
-    return send(res, e.code >= 400 && e.code < 500 ? e.code : 400, { error: e.message || 'Erro.' }), true;
+    return auth.sendError(res, e), true;
   }
 }
 
-function removePost(id) {
-  delete index.posts[id];
-  fs.promises.rm(postFile(id), { force: true }).catch(() => {});
-  saveIndex();
-}
-auth.hooks.onDelete.push((uid) => { for (const m of Object.values(index.posts)) if (m.uid === uid) removePost(m.id); });
+// Conta excluída: o store já apagou as publicações dela; aqui só limpa o índice em memória.
+auth.hooks.onDelete.push((uid) => { for (const m of Object.values(index.posts)) if (m.uid === uid) delete index.posts[m.id]; });
 
-module.exports = { handle, itemCleaner, cleanTier, str, bad };
+module.exports = { handle, ready, itemCleaner, cleanTier, str, bad };

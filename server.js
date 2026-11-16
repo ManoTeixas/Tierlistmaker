@@ -1,4 +1,4 @@
-// Servidor sem dependências (Node 18+).  Uso:  node server.js
+// Servidor Node 18+.  Uso:  node server.js   (com DATABASE_URL, guarda tudo no Postgres; veja store.js)
 // Serve o site da pasta /public, contas e comunidade (auth.js, community.js)
 // e faz a busca de imagens livres (images.js: Openverse, Wikimedia Commons e Pexels).
 const http = require('http');
@@ -125,6 +125,12 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`Escalação rodando em http://localhost:${PORT}  (dados em ${auth.DATA_DIR})`);
+// Só aceita conexões depois de carregar contas, sessões e o índice da comunidade.
+Promise.all([auth.ready, community.ready]).then(() => {
+  server.listen(PORT, () => {
+    console.log(`Escalação rodando em http://localhost:${PORT}  (dados em ${require('./store').where})`);
+  });
+}).catch((e) => {
+  console.error('Não consegui abrir o armazenamento:', e.message);
+  process.exit(1);
 });

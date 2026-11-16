@@ -1,40 +1,24 @@
-// Contas (e-mail + senha) e sincronização das listas. Sem dependências: usa só o Node.
-// Dados em DATA_DIR (padrão ./data):  users.json  e  blobs/<id>.json
-const fs = require('fs');
-const path = require('path');
+// Contas (e-mail + senha) e sincronização das listas.
+// Onde os dados ficam (Postgres ou arquivos em DATA_DIR) é decidido em store.js.
 const crypto = require('crypto');
 const { promisify } = require('util');
+const store = require('./store');
 const scrypt = promisify(crypto.scrypt);
 
-const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(__dirname, 'data'));
-const BLOBS = path.join(DATA_DIR, 'blobs');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const DATA_DIR = store.DATA_DIR;
 const SESSION_MS = 30 * 24 * 3600 * 1000;
 const MAX_BODY = 12 * 1024 * 1024;   // listas + fotos de um usuário
 const MODES = ['jogos', 'futebol', 'tier', 'bracket'];
 const TRUST_PROXY = process.env.TRUST_PROXY === '1';
 
-fs.mkdirSync(BLOBS, { recursive: true });
-
-// ---------- armazenamento (arquivo JSON, gravação atômica e em fila) ----------
-let db = { users: {}, sessions: {} };
-try { db = Object.assign(db, JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'))); } catch (_) { /* primeiro uso */ }
-const byEmail = new Map(Object.values(db.users).map((u) => [u.email, u.id]));
-
-let queue = Promise.resolve();
-function writeAtomic(file, text) {
-  queue = queue.then(async () => {
-    const tmp = file + '.' + process.pid + '.tmp';
-    await fs.promises.writeFile(tmp, text, { mode: 0o600 });
-    await fs.promises.rename(tmp, file);
-  }).catch((e) => console.error('Erro ao gravar', file, e.message));
-  return queue;
-}
-const saveDb = () => writeAtomic(USERS_FILE, JSON.stringify(db));
-const blobFile = (uid) => path.join(BLOBS, uid + '.json');
-function readBlob(uid) {
-  try { return JSON.parse(fs.readFileSync(blobFile(uid), 'utf8')); } catch (_) { return { rev: 0, projects: [], lib: {}, deleted: {} }; }
-}
+// ---------- cache em memória (contas e sessões são consultadas a cada requisição) ----------
+// Gravações vão primeiro para o store; o cache só muda depois que a gravação deu certo.
+const db = { users: {}, sessions: {} };
+const byEmail = new Map();
+const ready = (async () => {
+  for (const u of await store.allUsers()) { db.users[u.id] = u; byEmail.set(u.email, u.id); }
+  db.sessions = await store.allSessions();
+})();
 
 // ---------- utilidades ----------
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
@@ -74,7 +58,9 @@ function tooMany(key, max, windowMs, add) {
   hits.set(key, arr);
   return arr.length > max;
 }
-setInterval(() => { const now = Date.now(); for (const [k, a] of hits) if (!a.some((t) => now - t < 3600e3)) hits.delete(k); for (const [h, s] of Object.entries(db.sessions)) if (s.exp < now) delete db.sessions[h]; }, 10 * 60 * 1000).unref();
+setInterval(() => { const now = Date.now(); for (const [k, a] of hits) if (!a.some((t) => now - t < 3600e3)) hits.delete(k); for (const [h, s] of Object.entries(db.sessions)) if (s.exp < now) delete db.sessions[h];
+  store.delExpiredSessions(now).catch((e) => console.error('Erro ao limpar sessões:', e.message));
+}, 10 * 60 * 1000).unref();
 
 // ---------- senha ----------
 async function hashPassword(pw) {
@@ -98,10 +84,11 @@ function sessionUser(req) {
   if (!s || s.exp < Date.now()) return null;
   return db.users[s.uid] || null;
 }
-function startSession(req, res, uid, body) {
-  const token = crypto.randomBytes(32).toString('base64url');
-  db.sessions[sha(token)] = { uid, exp: Date.now() + SESSION_MS };
-  saveDb();
+async function startSession(req, res, uid, body) {
+  const token = crypto.randomBytes(32).toString('base64url'), h = sha(token);
+  const s = { uid, exp: Date.now() + SESSION_MS };
+  await store.putSession(h, s);
+  db.sessions[h] = s;
   send(res, 200, body, { 'Set-Cookie': setCookie(req, token, SESSION_MS / 1000) });
 }
 
@@ -143,7 +130,7 @@ async function handle(req, res, url) {
     }
     if (p === '/api/auth/logout' && req.method === 'POST') {
       const tok = cookieOf(req, 'sid');
-      if (tok) { delete db.sessions[sha(tok)]; saveDb(); }
+      if (tok) { await store.delSession(sha(tok)); delete db.sessions[sha(tok)]; }
       return send(res, 200, { ok: true }, { 'Set-Cookie': setCookie(req, '', 0) }), true;
     }
 
@@ -157,9 +144,13 @@ async function handle(req, res, url) {
         if (pw.length < 8 || pw.length > 200) return send(res, 400, { error: 'A senha precisa ter de 8 a 200 caracteres.' }), true;
         if (byEmail.has(email)) return send(res, 409, { error: 'Já existe uma conta com este e-mail. Use “Entrar”.' }), true;
         const id = crypto.randomBytes(12).toString('hex');
-        db.users[id] = { id, email, pass: await hashPassword(pw), created: Date.now() };
+        const nu = { id, email, pass: await hashPassword(pw), created: Date.now() };
+        // outro cadastro com o mesmo e-mail pode ter terminado enquanto a senha era calculada
+        if (byEmail.has(email)) return send(res, 409, { error: 'Já existe uma conta com este e-mail. Use “Entrar”.' }), true;
         byEmail.set(email, id);
-        return startSession(req, res, id, { user: { email } }), true;
+        try { await store.putUser(nu); } catch (e) { byEmail.delete(email); throw e; }
+        db.users[id] = nu;
+        return await startSession(req, res, id, { user: { email } }), true;
       }
       const key = 'login:' + ip + ':' + email;
       if (tooMany(key, 8, 15 * 60e3, false)) return send(res, 429, { error: 'Muitas tentativas. Espere alguns minutos e tente de novo.' }), true;
@@ -167,7 +158,7 @@ async function handle(req, res, url) {
       const ok = await checkPassword(pw, u ? u.pass : (await DUMMY));
       if (!u || !ok) { tooMany(key, 8, 15 * 60e3, true); return send(res, 401, { error: 'E-mail ou senha incorretos.' }), true; }
       hits.delete(key);
-      return startSession(req, res, u.id, { user: { email: u.email } }), true;
+      return await startSession(req, res, u.id, { user: { email: u.email } }), true;
     }
 
     if (p === '/api/auth/delete' && req.method === 'POST') {
@@ -175,9 +166,9 @@ async function handle(req, res, url) {
       if (!u) return send(res, 401, { error: 'Entre na sua conta primeiro.' }), true;
       const b = await readJson(req, 10 * 1024);
       if (!(await checkPassword(String(b.password || ''), u.pass))) return send(res, 401, { error: 'Senha incorreta.' }), true;
+      await store.delUser(u.id);   // apaga junto as sessões, as listas e as publicações
       delete db.users[u.id]; byEmail.delete(u.email);
       for (const [h, s] of Object.entries(db.sessions)) if (s.uid === u.id) delete db.sessions[h];
-      saveDb(); fs.promises.rm(blobFile(u.id), { force: true }).catch(() => {});
       hooks.onDelete.forEach((fn) => { try { fn(u.id); } catch (_) {} });
       return send(res, 200, { ok: true }, { 'Set-Cookie': setCookie(req, '', 0) }), true;
     }
@@ -185,21 +176,29 @@ async function handle(req, res, url) {
     if (p === '/api/sync') {
       const u = sessionUser(req);
       if (!u) return send(res, 401, { error: 'Entre na sua conta.' }), true;
-      if (req.method === 'GET') return send(res, 200, readBlob(u.id)), true;
+      if (req.method === 'GET') return send(res, 200, await store.getBlob(u.id)), true;
       if (req.method === 'PUT') {
         const b = await readJson(req, MAX_BODY);
-        const clean = cleanSync(b), cur = readBlob(u.id);
-        if (Number(b.baseRev) !== cur.rev) return send(res, 409, cur), true;   // outro aparelho gravou antes: o cliente mescla e tenta de novo
-        const next = { rev: cur.rev + 1, ...clean };
-        await writeAtomic(blobFile(u.id), JSON.stringify(next));
-        return send(res, 200, { rev: next.rev }), true;
+        const clean = cleanSync(b), baseRev = Number(b.baseRev);
+        // grava só se ninguém gravou depois de baseRev; senão outro aparelho gravou antes: o cliente mescla e tenta de novo
+        if (!Number.isInteger(baseRev) || !(await store.putBlob(u.id, baseRev, clean))) return send(res, 409, await store.getBlob(u.id)), true;
+        return send(res, 200, { rev: baseRev + 1 }), true;
       }
     }
     return send(res, 404, { error: 'Não encontrado.' }), true;
   } catch (e) {
-    return send(res, e.code >= 400 && e.code < 500 ? e.code : 400, { error: e.message || 'Erro.' }), true;
+    return sendError(res, e), true;
   }
 }
 
 const hooks = { onDelete: [] };   // outros módulos (comunidade) apagam os dados de quem exclui a conta
-module.exports = { handle, DATA_DIR, sessionUser, readJson, send, clientIp, tooMany, writeAtomic, originOk, hooks, isHttps };
+// Erros de validação vão para o usuário; falhas do banco/disco (marcadas pelo store) viram 500 sem detalhes internos.
+function sendError(res, e) {
+  if (e.internal) {
+    console.error('Erro no armazenamento:', e.message);
+    return send(res, 500, { error: 'Erro no servidor. Tente de novo em instantes.' });
+  }
+  return send(res, e.code >= 400 && e.code < 500 ? e.code : 400, { error: e.message || 'Erro.' });
+}
+
+module.exports = { handle, ready, sendError, DATA_DIR, sessionUser, readJson, send, clientIp, tooMany, originOk, hooks, isHttps };
